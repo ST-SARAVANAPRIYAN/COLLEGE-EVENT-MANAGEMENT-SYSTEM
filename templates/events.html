@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events | CEMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">CEMS</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/events">Events</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'participant' %}
+                            <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/participant/dashboard">Dashboard</a></li>
+                        {% elif current_user.role == 'organiser' %}
+                            <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/organiser/dashboard">Dashboard</a></li>
+                        {% elif current_user.role == 'admin' %}
+                            <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/admin/dashboard">Dashboard</a></li>
+                        {% endif %}
+                        <li class="nav-item"><a class="nav-link btn btn-light text-primary ms-2" href="/logout">Logout</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/login">Login</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Events Header -->
+    <div class="events-header">
+        <div class="container">
+            <h1>Explore Events</h1>
+            <p>Discover and participate in exciting college events</p>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="container py-4">
+        <div class="events-filters bg-light p-3 rounded shadow-sm">
+            <form id="filterForm" method="GET" action="/events" class="row g-3">
+                <div class="col-md-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">All Categories</option>
+                        <option value="cultural" {% if request.args.get('category') == 'cultural' %}selected{% endif %}>Cultural</option>
+                        <option value="technical" {% if request.args.get('category') == 'technical' %}selected{% endif %}>Technical</option>
+                        <option value="sports" {% if request.args.get('category') == 'sports' %}selected{% endif %}>Sports</option>
+                        <option value="academic" {% if request.args.get('category') == 'academic' %}selected{% endif %}>Academic</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date" class="form-label">Date</label>
+                    <select class="form-select" id="date" name="date">
+                        <option value="">Any Date</option>
+                        <option value="today" {% if request.args.get('date') == 'today' %}selected{% endif %}>Today</option>
+                        <option value="tomorrow" {% if request.args.get('date') == 'tomorrow' %}selected{% endif %}>Tomorrow</option>
+                        <option value="week" {% if request.args.get('date') == 'week' %}selected{% endif %}>This Week</option>
+                        <option value="month" {% if request.args.get('date') == 'month' %}selected{% endif %}>This Month</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Registration Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">Any Status</option>
+                        <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>Registration Open</option>
+                        <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>Registration Closed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="search" name="search" placeholder="Search events..." value="{{ request.args.get('search', '') }}">
+                        <button class="btn btn-primary" type="submit">Filter</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Events List -->
+    <div class="container py-5">
+        <!-- Category Pills -->
+        <div class="category-pills mb-4">
+            <a href="/events" class="category-pill {% if not request.args.get('category') %}active{% endif %}">All</a>
+            <a href="/events?category=cultural" class="category-pill {% if request.args.get('category') == 'cultural' %}active{% endif %}">Cultural</a>
+            <a href="/events?category=technical" class="category-pill {% if request.args.get('category') == 'technical' %}active{% endif %}">Technical</a>
+            <a href="/events?category=sports" class="category-pill {% if request.args.get('category') == 'sports' %}active{% endif %}">Sports</a>
+            <a href="/events?category=academic" class="category-pill {% if request.args.get('category') == 'academic' %}active{% endif %}">Academic</a>
+        </div>
+        
+        <!-- Results Count -->
+        <div class="results-count mb-4">
+            <p>{{ events|length }} events found</p>
+        </div>
+        
+        <!-- Events Grid -->
+        {% if events %}
+        <div class="row g-4">
+            {% for event in events %}
+            <div class="col-md-4">
+                <div class="event-card">
+                    <div class="event-image">
+                        {% if event.image %}
+                        <img src="{{ event.image }}" alt="{{ event.title }}">
+                        {% else %}
+                        <img src="https://via.placeholder.com/400x200?text=Event" alt="{{ event.title }}">
+                        {% endif %}
+                        <div class="event-date">
+                            <span class="day">{{ event.start_date.strftime('%d') }}</span>
+                            <span class="month">{{ event.start_date.strftime('%b') }}</span>
+                        </div>
+                        {% if event.registration_end_date < current_date %}
+                        <div class="event-badge closed">Registration Closed</div>
+                        {% elif event.seats_available <= 0 %}
+                        <div class="event-badge sold-out">Sold Out</div>
+                        {% else %}
+                        <div class="event-badge open">Registration Open</div>
+                        {% endif %}
+                    </div>
+                    <div class="event-details">
+                        <h3>{{ event.title }}</h3>
+                        <div class="event-info">
+                            <span><i class="fas fa-map-marker-alt"></i> {{ event.venue }}</span>
+                            <span><i class="fas fa-clock"></i> {{ event.start_time }}</span>
+                        </div>
+                        <p>{{ event.description|truncate(100) }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="/events/{{ event.id }}" class="btn btn-outline-primary">View Details</a>
+                            <span class="event-price">
+                                {% if event.is_free %}
+                                <span class="badge bg-success">Free</span>
+                                {% else %}
+                                ₹{{ event.price }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <nav class="mt-5">
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if pagination.page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ pagination.prev_url }}" tabindex="-1">Previous</a>
+                </li>
+                
+                {% for page in pagination.iter_pages() %}
+                    {% if page %}
+                        <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ pagination.get_url(page) }}">{{ page }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if pagination.page == pagination.pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ pagination.next_url }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="no-events">
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times fa-5x text-muted mb-3"></i>
+                <h3>No events found</h3>
+                <p>Try adjusting your search or filters to find events.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h5>CEMS</h5>
+                    <p>Organize, manage, and participate in college events with ease!</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/events">Events</a></li>
+                        <li><a href="/about">About</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/become-organiser">Become an Organiser</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Connect With Us</h5>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p>&copy; 2025 College Event Management System</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Filter form enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-submit when category, date, or status changes
+            document.querySelectorAll('#category, #date, #status').forEach(select => {
+                select.addEventListener('change', function() {
+                    document.getElementById('filterForm').submit();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

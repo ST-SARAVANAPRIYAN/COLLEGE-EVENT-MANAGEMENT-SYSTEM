@@ -1,0 +1,63 @@
+College Event Management System (CEMS) - Enhanced Project Plan
+
+Overview:
+CEMS is a comprehensive platform for organizing, managing, and participating in college events. It supports three user roles: Admin, Organiser, and Participant. The system aims to provide an interactive, visually appealing, and user-friendly experience for all users, with dynamic event pages and robust management features.
+
+Key Features:
+1. User Roles:
+   - Admin: Manages the entire platform, oversees users and events, handles escalations, and ensures smooth operation.
+   - Organiser: Creates and manages events, allocates resources, uploads media (images, videos, brochures), sets event details (timing, venue, fees, capacity), generates reports, analyzes event data with visualizations, updates events, and sends real-time notifications (email).
+   - Participant: Registers for events, explores event details, downloads brochures, views event media, pays registration fees (Razorpay integration for dev), and participates in events.
+
+2. Event Management:
+   - Events can be Main Events, Sub Events, or Single Events.
+   - Main Event cards display sub-events upon click for participants.
+   - Organisers can upload exploration website files (HTML, CSS, JS) for each event, which are hosted and accessible via an 'Explore Event' option (opens in a new page).
+   - If media (image, video, brochure) is missing, the UI gracefully handles it (e.g., gradient card with event name, fallback video/image, disabled download button).
+
+3. Interactive Event Pages:
+   - Event cards adapt their UI based on event tags:
+     - Technical events (e.g., hackathons): Neon, tech-inspired UI with dynamic effects.
+     - Non-technical events: Fun, colorful UI with playful animations (e.g., animated characters).
+   - Clicking an event card dynamically updates the event details section with relevant UI and data.
+
+4. Payment Integration:
+   - Razorpay integration for registration fee payments (development mode).
+
+5. Event Exploration:
+   - 'Explore Event' option opens a dedicated exploration page (custom HTML/CSS/JS per event if provided by organiser).
+
+6. Organiser Tools:
+   - Resource allocation, media uploads, event scheduling, capacity management, venue assignment.
+   - Report generation and event analytics with visualizations.
+   - Real-time notifications via email.
+
+7. Admin Tools:
+   - Full platform management, user and event oversight, analytics dashboard.
+
+8. General UI/UX:
+   - Top-notch, responsive, and accessible UI for all pages.
+   - Home page, login, signup, and role-based dashboards (participant, organiser, admin).
+   - Event lists tailored for each user type.
+   - Example/demo data used in frontend for initial development (to be replaced with database integration later).
+
+Tech Stack:
+- Backend: Python (Flask)
+- Frontend: HTML, CSS, JavaScript
+- Database: MySQL (to be integrated after frontend demo)
+- Payment: Razorpay (dev mode)
+
+Development Plan:
+1. Develop the frontend for:
+   - Home page
+   - Login and Signup pages
+   - Event list/dashboard for Participant, Organiser, and Admin
+   - Interactive event detail pages (with dynamic UI based on event type)
+   - Event exploration page (opens in new tab)
+   - Example/demo data for events and users
+2. Ensure all UI/UX requirements are met, including responsive design and accessibility.
+3. Prepare for backend and database integration after frontend is complete.
+
+---
+
+Start by developing the frontend as described above, using example data for events and users. Once the frontend is ready, proceed to backend and database integration.

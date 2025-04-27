@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Event Management System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container">
+                <a class="navbar-brand" href="/">CEMS</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/events">Events</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.role == 'participant' %}
+                                <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/participant/dashboard">Dashboard</a></li>
+                            {% elif current_user.role == 'organiser' %}
+                                <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/organiser/dashboard">Dashboard</a></li>
+                            {% elif current_user.role == 'admin' %}
+                                <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/admin/dashboard">Dashboard</a></li>
+                            {% endif %}
+                            <li class="nav-item"><a class="nav-link btn btn-light text-primary ms-2" href="/logout">Logout</a></li>
+                        {% else %}
+                            <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/login">Login</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <div class="hero-section">
+            <div class="container text-center">
+                <h1 class="animate__animated animate__fadeInUp">College Event Management System</h1>
+                <p class="animate__animated animate__fadeInUp animate__delay-1s">Organize, manage, and participate in college events with ease!</p>
+                <div class="animate__animated animate__fadeInUp animate__delay-2s">
+                    <a href="/events" class="btn btn-primary btn-lg">Explore Events</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="featured-events" class="py-5">
+            <div class="container">
+                <h2 class="section-title text-center mb-5">Featured Events</h2>
+                <div class="row g-4">
+                    {% for event in featured_events %}
+                    <div class="col-md-4">
+                        <div class="event-card">
+                            <div class="event-image">
+                                {% if event.image %}
+                                <img src="{{ event.image }}" alt="{{ event.title }}">
+                                {% else %}
+                                <img src="https://via.placeholder.com/400x200?text=Event" alt="{{ event.title }}">
+                                {% endif %}
+                                <div class="event-date">
+                                    <span class="day">{{ event.start_date.strftime('%d') }}</span>
+                                    <span class="month">{{ event.start_date.strftime('%b') }}</span>
+                                </div>
+                            </div>
+                            <div class="event-details">
+                                <h3>{{ event.title }}</h3>
+                                <div class="event-info">
+                                    <span><i class="fas fa-map-marker-alt"></i> {{ event.venue }}</span>
+                                    <span><i class="fas fa-clock"></i> {{ event.start_time }}</span>
+                                </div>
+                                <p>{{ event.description|truncate(100) }}</p>
+                                <a href="/events/{{ event.id }}" class="btn btn-outline-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-4">
+                    <a href="/events" class="btn btn-primary">View All Events</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="categories" class="py-5 bg-light">
+            <div class="container">
+                <h2 class="section-title text-center mb-5">Event Categories</h2>
+                <div class="row g-4 justify-content-center">
+                    <div class="col-md-3 col-6">
+                        <a href="/events?category=cultural" class="category-card">
+                            <div class="icon"><i class="fas fa-music"></i></div>
+                            <h4>Cultural</h4>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="/events?category=technical" class="category-card">
+                            <div class="icon"><i class="fas fa-laptop-code"></i></div>
+                            <h4>Technical</h4>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="/events?category=sports" class="category-card">
+                            <div class="icon"><i class="fas fa-running"></i></div>
+                            <h4>Sports</h4>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="/events?category=academic" class="category-card">
+                            <div class="icon"><i class="fas fa-book"></i></div>
+                            <h4>Academic</h4>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="organizers" class="py-5">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h2 class="section-title">Want to Host Your Own Event?</h2>
+                        <p>As an organizer, you can create and manage your own events, track registrations, and collect payments - all in one place.</p>
+                        <ul class="checkmark-list">
+                            <li>Create custom event pages with your branding</li>
+                            <li>Track registrations and attendees</li>
+                            <li>Manage event logistics efficiently</li>
+                            <li>Generate reports and analytics</li>
+                        </ul>
+                        <a href="/become-organiser" class="btn btn-primary mt-3">Become an Organiser</a>
+                    </div>
+                    <div class="col-md-6">
+                        <img src="https://images.unsplash.com/photo-1517292987719-0369a794ec0f?auto=format&fit=crop&w=800" alt="Event Organiser" class="img-fluid rounded shadow">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="testimonials" class="py-5">
+            <div class="container">
+                <h2 class="section-title text-center mb-5">What People Say</h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="testimonial-card">
+                            <div class="testimonial-content">
+                                <p>"CEMS made organizing our technical symposium so much easier. The custom event exploration feature was a game-changer!"</p>
+                            </div>
+                            <div class="testimonial-author">
+                                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Testimonial Author">
+                                <div>
+                                    <h5>Robert Johnson</h5>
+                                    <p>Event Organizer</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="testimonial-card">
+                            <div class="testimonial-content">
+                                <p>"I love how each event has its own unique experience. The technical events with neon UI are my favorite!"</p>
+                            </div>
+                            <div class="testimonial-author">
+                                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Testimonial Author">
+                                <div>
+                                    <h5>Sarah Williams</h5>
+                                    <p>Participant</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="testimonial-card">
+                            <div class="testimonial-content">
+                                <p>"The analytics and reporting features have helped us make better decisions for upcoming events. Highly recommended!"</p>
+                            </div>
+                            <div class="testimonial-author">
+                                <img src="https://randomuser.me/api/portraits/men/67.jpg" alt="Testimonial Author">
+                                <div>
+                                    <h5>Michael Chen</h5>
+                                    <p>College Administrator</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-5 bg-light">
+            <div class="container">
+                <div class="row g-5">
+                    <div class="col-md-6">
+                        <h2 class="section-title">Get in Touch</h2>
+                        <p class="mb-4">Have questions about CEMS? We're here to help!</p>
+                        <form>
+                            <div class="mb-3">
+                                <input type="text" class="form-control" placeholder="Your Name">
+                            </div>
+                            <div class="mb-3">
+                                <input type="email" class="form-control" placeholder="Your Email">
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" rows="4" placeholder="Your Message"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Send Message</button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="contact-info">
+                            <h4>Contact Information</h4>
+                            <div class="contact-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <p>123 College Street, Campus Area, City</p>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <p>info@cems.edu</p>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <p>+1 234 567 8900</p>
+                            </div>
+                            <div class="social-icons mt-4">
+                                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                                <a href="#"><i class="fab fa-twitter"></i></a>
+                                <a href="#"><i class="fab fa-instagram"></i></a>
+                                <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="py-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h5>CEMS</h5>
+                    <p>Organize, manage, and participate in college events with ease!</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/events">Events</a></li>
+                        <li><a href="/about">About</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/become-organiser">Become an Organiser</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Newsletter</h5>
+                    <p>Subscribe to get updates on upcoming events</p>
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Your Email">
+                        <button class="btn btn-primary" type="button">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p>&copy; 2025 College Event Management System</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

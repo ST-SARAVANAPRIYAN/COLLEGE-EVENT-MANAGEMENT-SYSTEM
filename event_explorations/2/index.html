@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cultural Fest 2025</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            background-color: #f8edeb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ffe66d);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            position: relative;
+            border-radius: 0 0 50% 50% / 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .event-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .event-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, #ff6b6b, #ffe66d);
+        }
+        .event-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .event-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .event-date {
+            display: inline-block;
+            background-color: #ffe66d;
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .gallery-section {
+            padding: 50px 0;
+            background-color: #ffffff;
+            border-radius: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .gallery-item {
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+        .timeline {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 0;
+        }
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            background-color: #ff6b6b;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -3px;
+            border-radius: 10px;
+        }
+        .timeline-item {
+            padding: 10px 40px;
+            position: relative;
+            width: 50%;
+            box-sizing: border-box;
+        }
+        .timeline-item:nth-child(odd) {
+            left: 0;
+        }
+        .timeline-item:nth-child(even) {
+            left: 50%;
+        }
+        .timeline-content {
+            padding: 20px;
+            background-color: white;
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .timeline-content::after {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background-color: white;
+            border: 4px solid #ff6b6b;
+            top: 15px;
+            border-radius: 50%;
+            z-index: 1;
+        }
+        .timeline-item:nth-child(odd) .timeline-content::after {
+            right: -17px;
+        }
+        .timeline-item:nth-child(even) .timeline-content::after {
+            left: -17px;
+        }
+        .register-section {
+            background: linear-gradient(135deg, #ffe66d, #ff6b6b);
+            padding: 50px 0;
+            border-radius: 20px;
+            margin: 40px 0;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .register-section::before {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            top: -100px;
+            left: -100px;
+        }
+        .register-section::after {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            bottom: -75px;
+            right: -75px;
+        }
+        .register-btn {
+            background-color: white;
+            color: #ff6b6b;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .register-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            background-color: #ff6b6b;
+            color: white;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            animation: float 15s infinite linear;
+        }
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        .footer {
+            background-color: #333;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-top: 50px;
+            border-radius: 20px 20px 0 0;
+        }
+        .sponsors {
+            padding: 30px 0;
+            background-color: #fff;
+            border-radius: 20px;
+            margin: 20px 0;
+        }
+        .sponsor-logo {
+            height: 80px;
+            margin: 20px;
+            filter: grayscale(100%);
+            transition: filter 0.3s ease;
+        }
+        .sponsor-logo:hover {
+            filter: grayscale(0%);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="animate__animated animate__fadeInDown">Cultural Fest 2025</h1>
+            <p class="animate__animated animate__fadeInUp">A celebration of art, music, and dance</p>
+            <div class="animate__animated animate__bounceIn animate__delay-1s">
+                <span class="event-date">May 15-16, 2025</span>
+            </div>
+        </div>
+        <!-- Floating particles for visual effect -->
+        <div class="particle" style="width: 30px; height: 30px; left: 10%; top: 20%;"></div>
+        <div class="particle" style="width: 20px; height: 20px; left: 20%; top: 80%;"></div>
+        <div class="particle" style="width: 15px; height: 15px; left: 80%; top: 10%;"></div>
+        <div class="particle" style="width: 25px; height: 25px; left: 70%; top: 70%;"></div>
+    </header>
+
+    <div class="container">
+        <div class="row my-5">
+            <div class="col-md-6 animate__animated animate__fadeInLeft">
+                <div class="event-card">
+                    <h3>Music Night</h3>
+                    <span class="event-date">May 15, 2025</span>
+                    <p>An unforgettable night of music with performances from local bands and college talent. Experience a diverse range of genres from rock to classical, all in one magical evening.</p>
+                    <p>Venue: Main Auditorium</p>
+                    <p>Time: 6:00 PM - 10:00 PM</p>
+                </div>
+            </div>
+            <div class="col-md-6 animate__animated animate__fadeInRight">
+                <div class="event-card">
+                    <h3>Dance Competition</h3>
+                    <span class="event-date">May 16, 2025</span>
+                    <p>Show off your moves at our annual dance competition. Solo and group performances welcome. Categories include classical, contemporary, hip-hop, and folk dance.</p>
+                    <p>Venue: Open-air Theater</p>
+                    <p>Time: 4:00 PM - 8:00 PM</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 animate__animated animate__fadeInLeft animate__delay-1s">
+                <div class="event-card">
+                    <h3>Art Exhibition</h3>
+                    <span class="event-date">May 15-16, 2025</span>
+                    <p>Explore beautiful artworks created by talented students and guest artists. Featuring paintings, sculptures, digital art, and interactive installations.</p>
+                    <p>Venue: Art Gallery</p>
+                    <p>Time: 10:00 AM - 6:00 PM</p>
+                </div>
+            </div>
+            <div class="col-md-6 animate__animated animate__fadeInRight animate__delay-1s">
+                <div class="event-card">
+                    <h3>Food Festival</h3>
+                    <span class="event-date">May 15-16, 2025</span>
+                    <p>Sample delicious cuisines from around the world. Student clubs and local vendors will be offering a variety of dishes to satisfy your taste buds.</p>
+                    <p>Venue: College Grounds</p>
+                    <p>Time: 11:00 AM - 10:00 PM</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="gallery-section my-5">
+            <h2 class="text-center mb-4">Gallery of Past Events</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30" alt="Concert">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad" alt="Dance">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1559671846-cfd21d123763" alt="Art">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6a3" alt="Food Festival">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7" alt="Crowd">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="text-center my-5">Event Schedule</h2>
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <h3>Opening Ceremony</h3>
+                    <p>May 15, 10:00 AM</p>
+                    <p>Join us for the grand opening of Cultural Fest 2025!</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <h3>Art Exhibition Opens</h3>
+                    <p>May 15, 11:00 AM</p>
+                    <p>Explore amazing artwork from talented artists.</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <h3>Food Festival Begins</h3>
+                    <p>May 15, 12:00 PM</p>
+                    <p>Taste delicious cuisines from around the world.</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <h3>Music Night</h3>
+                    <p>May 15, 6:00 PM</p>
+                    <p>An unforgettable night of musical performances.</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <h3>Workshop: Traditional Art</h3>
+                    <p>May 16, 10:00 AM</p>
+                    <p>Learn traditional art techniques from master artists.</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <h3>Dance Competition</h3>
+                    <p>May 16, 4:00 PM</p>
+                    <p>Watch amazing dance performances and cheer for your favorites.</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <h3>Closing Ceremony</h3>
+                    <p>May 16, 8:30 PM</p>
+                    <p>Awards presentation and final celebrations.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sponsors">
+            <h2 class="text-center mb-4">Our Sponsors</h2>
+            <div class="d-flex justify-content-center flex-wrap">
+                <img src="https://via.placeholder.com/200x80?text=Sponsor+1" alt="Sponsor 1" class="sponsor-logo">
+                <img src="https://via.placeholder.com/200x80?text=Sponsor+2" alt="Sponsor 2" class="sponsor-logo">
+                <img src="https://via.placeholder.com/200x80?text=Sponsor+3" alt="Sponsor 3" class="sponsor-logo">
+                <img src="https://via.placeholder.com/200x80?text=Sponsor+4" alt="Sponsor 4" class="sponsor-logo">
+            </div>
+        </div>
+
+        <div class="register-section text-center">
+            <div class="container position-relative" style="z-index: 1;">
+                <h2 class="text-white mb-4">Ready to Join the Fun?</h2>
+                <p class="text-white mb-4">Register now to participate in our cultural fest. Limited spots available!</p>
+                <a href="javascript:redirectToRegistration()" class="btn register-btn">Register Now</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Contact Us</h5>
+                    <p>Email: culturalfest@college.edu</p>
+                    <p>Phone: (123) 456-7890</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Follow Us</h5>
+                    <p>Instagram | Facebook | Twitter</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Venue</h5>
+                    <p>College Campus</p>
+                    <p>123 University Avenue</p>
+                </div>
+            </div>
+            <div class="mt-3">
+                <p>&copy; 2025 Cultural Fest. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add animation to elements when they enter the viewport
+        document.addEventListener('DOMContentLoaded', function() {
+            const animateElements = document.querySelectorAll('.event-card, .gallery-item');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate__animated', 'animate__fadeIn');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            animateElements.forEach(element => {
+                observer.observe(element);
+            });
+            
+            // Create random particles for visual effect
+            createParticles();
+        });
+        
+        function createParticles() {
+            const headerElement = document.querySelector('.header');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size between 5px and 20px
+                const size = Math.random() * 15 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position within the header
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                
+                // Random animation duration and delay
+                particle.style.animationDuration = `${Math.random() * 10 + 5}s`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                headerElement.appendChild(particle);
+            }
+        }
+        
+        function redirectToRegistration() {
+            // In a real implementation, this would take the user back to the main system for registration
+            window.parent.location.href = '/login';
+        }
+    </script>
+</body>
+</html>
