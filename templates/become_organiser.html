@@ -51,16 +51,27 @@
             <!-- Step 2: OTP Verification Form -->
             <form id="otpForm" method="POST" action="/become-organiser/verify_otp" class="{% if not otp_sent %}d-none{% endif %}">
                 <div class="alert alert-info">
-                    An OTP has been sent to your email. Please enter it below to verify your account.
+                    A 6-digit verification code has been sent to <strong>{{ email }}</strong>
                 </div>
                 <div class="mb-3">
-                    <label for="otp" class="form-label">One-Time Password (OTP)</label>
-                    <input type="text" class="form-control" id="otp" name="otp" required autocomplete="one-time-code" maxlength="6">
+                    <label class="form-label">Verification Code</label>
+                    <div class="d-flex justify-content-between mb-3">
+                        <input type="text" class="form-control text-center mx-1 otp-input" name="otp1" maxlength="1" style="width: 45px; font-size: 1.2rem;" required autofocus>
+                        <input type="text" class="form-control text-center mx-1 otp-input" name="otp2" maxlength="1" style="width: 45px; font-size: 1.2rem;" required>
+                        <input type="text" class="form-control text-center mx-1 otp-input" name="otp3" maxlength="1" style="width: 45px; font-size: 1.2rem;" required>
+                        <input type="text" class="form-control text-center mx-1 otp-input" name="otp4" maxlength="1" style="width: 45px; font-size: 1.2rem;" required>
+                        <input type="text" class="form-control text-center mx-1 otp-input" name="otp5" maxlength="1" style="width: 45px; font-size: 1.2rem;" required>
+                        <input type="text" class="form-control text-center mx-1 otp-input" name="otp6" maxlength="1" style="width: 45px; font-size: 1.2rem;" required>
+                    </div>
+                    <input type="hidden" name="otp" id="full-otp">
                 </div>
                 <input type="hidden" name="email" value="{{ email }}">
-                <div class="d-flex justify-content-between">
-                    <button type="submit" class="btn btn-success flex-grow-1 me-2">Verify</button>
-                    <button type="button" class="btn btn-outline-secondary" id="resendOtp">Resend OTP</button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button type="submit" class="btn btn-success flex-grow-1 me-2">Verify & Create Account</button>
+                    <button type="button" class="btn btn-outline-secondary" id="resendOtp">Resend Code</button>
+                </div>
+                <div class="text-center" id="timer-container">
+                    <small class="text-muted">Resend code in <span id="countdown">60</span>s</small>
                 </div>
             </form>
             
@@ -72,28 +83,148 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('resendOtp')?.addEventListener('click', function() {
-            fetch('/become-organiser/resend_otp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: document.querySelector('input[name="email"]').value
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('OTP has been resent to your email');
-                } else {
-                    alert('Failed to resend OTP: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while resending the OTP');
-            });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle OTP input fields focus and auto-advance
+            const otpInputs = document.querySelectorAll('.otp-input');
+            const fullOtpInput = document.getElementById('full-otp');
+            
+            if (otpInputs.length > 0) {
+                otpInputs.forEach((input, index) => {
+                    // Auto-focus next input when a digit is entered
+                    input.addEventListener('input', function() {
+                        if (this.value.length === 1) {
+                            if (index < otpInputs.length - 1) {
+                                otpInputs[index + 1].focus();
+                            }
+                        }
+                        
+                        // Update the hidden input with full OTP
+                        let fullOtp = '';
+                        otpInputs.forEach(inp => {
+                            fullOtp += inp.value;
+                        });
+                        fullOtpInput.value = fullOtp;
+                    });
+                    
+                    // Handle backspace to go to previous input
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Backspace' && !this.value && index > 0) {
+                            otpInputs[index - 1].focus();
+                        }
+                    });
+                });
+                
+                // Handle numeric input only
+                otpInputs.forEach(input => {
+                    input.addEventListener('keypress', function(e) {
+                        if (isNaN(e.key) || e.key === ' ') {
+                            e.preventDefault();
+                        }
+                    });
+                    
+                    // Handle paste event to distribute digits
+                    input.addEventListener('paste', function(e) {
+                        e.preventDefault();
+                        const pasteData = e.clipboardData.getData('text');
+                        const digits = pasteData.replace(/\D/g, '').split('').slice(0, otpInputs.length);
+                        
+                        digits.forEach((digit, i) => {
+                            if (index + i < otpInputs.length) {
+                                otpInputs[index + i].value = digit;
+                            }
+                        });
+                        
+                        // Set focus to appropriate field
+                        const nextIndex = Math.min(index + digits.length, otpInputs.length - 1);
+                        otpInputs[nextIndex].focus();
+                        
+                        // Update the hidden input with full OTP
+                        let fullOtp = '';
+                        otpInputs.forEach(inp => {
+                            fullOtp += inp.value;
+                        });
+                        fullOtpInput.value = fullOtp;
+                    });
+                });
+            }
+        
+            // OTP Resend functionality with countdown timer
+            const resendBtn = document.getElementById('resendOtp');
+            const countdownEl = document.getElementById('countdown');
+            const timerContainer = document.getElementById('timer-container');
+            
+            if (resendBtn && countdownEl) {
+                let counter = 60;
+                
+                // Disable resend button initially
+                resendBtn.disabled = true;
+                
+                const timer = setInterval(() => {
+                    counter--;
+                    countdownEl.textContent = counter;
+                    
+                    if (counter <= 0) {
+                        clearInterval(timer);
+                        resendBtn.disabled = false;
+                        timerContainer.style.display = 'none';
+                    }
+                }, 1000);
+                
+                resendBtn.addEventListener('click', function() {
+                    if (!this.disabled) {
+                        fetch('/become-organiser/resend_otp', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                email: document.querySelector('input[name="email"]').value
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Reset timer
+                                counter = 60;
+                                countdownEl.textContent = counter;
+                                timerContainer.style.display = 'block';
+                                this.disabled = true;
+                                
+                                // Start timer again
+                                const newTimer = setInterval(() => {
+                                    counter--;
+                                    countdownEl.textContent = counter;
+                                    
+                                    if (counter <= 0) {
+                                        clearInterval(newTimer);
+                                        this.disabled = false;
+                                        timerContainer.style.display = 'none';
+                                    }
+                                }, 1000);
+                            } else {
+                                alert('Failed to resend OTP: ' + data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while resending the OTP');
+                        });
+                    }
+                });
+            }
+            
+            // Password validation for organizer form
+            const passwordInput = document.getElementById('password');
+            const organiserForm = document.getElementById('organiserForm');
+            
+            if (organiserForm && passwordInput) {
+                organiserForm.addEventListener('submit', function(e) {
+                    if (passwordInput.value.length < 8) {
+                        e.preventDefault();
+                        alert('Password must be at least 8 characters long');
+                    }
+                });
+            }
         });
     </script>
 </body>

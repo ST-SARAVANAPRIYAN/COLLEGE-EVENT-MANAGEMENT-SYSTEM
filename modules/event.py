@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, send_from_directory, session, render_template, flash, redirect
+from flask import Blueprint, request, jsonify, send_from_directory, session, render_template, flash, redirect, url_for
 from models.models import db, Event, Registration, User, Notification
 from utils.email_service import send_email, notify_participants_about_exploration
 import os
@@ -7,21 +7,26 @@ import zipfile
 import uuid
 from werkzeug.utils import secure_filename
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
-event_bp = Blueprint('event', __name__)
+event_bp = Blueprint('event', 'event')
 
-# Directory for event exploration pages
+# Directory for event exploration pages - keeping this for backward compatibility but not creating new directories
 EVENT_EXPLORATIONS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'event_explorations')
-if not os.path.exists(EVENT_EXPLORATIONS_DIR):
-    os.makedirs(EVENT_EXPLORATIONS_DIR)
+
+# Remove the directory creation code to prevent new directories from being created
+# If you want to completely remove the directory, uncomment and use the following code:
+# if os.path.exists(EVENT_EXPLORATIONS_DIR):
+#     shutil.rmtree(EVENT_EXPLORATIONS_DIR)
+
+NEW_THEMES = ['creative', 'elegant', 'minimalist', 'retro', 'tech']
 
 @event_bp.route('/api/events')
 def api_events():
     try:
         # Filter for parent events only if specified
         parent_only = request.args.get('parent_only', 'false').lower() == 'true'
-        if parent_only:
+        if (parent_only):
             result = [e.to_dict() for e in Event.query.filter_by(parent_event_id=None).all()]
         else:
             result = [e.to_dict() for e in Event.query.all()]
@@ -131,6 +136,120 @@ def register_for_event(event_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@event_bp.route('/register-event/<int:event_id>/guest', methods=['POST'])
+def register_event_guest(event_id):
+    try:
+        # Check if event exists
+        event = Event.query.get_or_404(event_id)
+        
+        # Get form data
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        
+        if not name or not email or not phone:
+            flash('Please fill all required fields', 'danger')
+            return redirect(url_for('events_list'))
+        
+        # Check if seats available
+        if event.seats_available <= 0:
+            flash('Sorry, no seats available', 'danger')
+            return redirect(url_for('events_list'))
+            
+        # Check registration deadline
+        if event.registration_end_date and event.registration_end_date < datetime.now():
+            flash('Registration deadline has passed', 'danger')
+            return redirect(url_for('events_list'))
+            
+        # Check if user already exists in the system
+        existing_user = User.query.filter_by(email=email).first()
+        
+        # If user exists, use their account
+        if existing_user:
+            user_id = existing_user.id
+            
+            # Check if already registered
+            existing_reg = Registration.query.filter_by(
+                event_id=event_id,
+                user_id=user_id
+            ).first()
+            
+            if existing_reg:
+                flash('You are already registered for this event', 'info')
+                return redirect(url_for('events_list'))
+        else:
+            # Create a temporary user with participant role
+            # Generate a random password that they can reset later if they want to login
+            import random
+            import string
+            temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            
+            # Hash the password
+            from werkzeug.security import generate_password_hash
+            hashed_password = generate_password_hash(temp_password)
+            
+            new_user = User(
+                name=name,
+                email=email,
+                contact_number=phone,
+                password=hashed_password,
+                role='participant'
+            )
+            
+            db.session.add(new_user)
+            db.session.commit()
+            user_id = new_user.id
+        
+        # Create registration
+        new_reg = Registration(
+            event_id=event_id,
+            user_id=user_id
+        )
+        
+        # Handle payment for paid events
+        if not event.is_free and event.price > 0:
+            # Placeholder for payment integration
+            new_reg.payment_status = 'pending'
+        else:
+            new_reg.payment_status = 'completed'
+            
+        # Update available seats
+        event.seats_available -= 1
+        
+        db.session.add(new_reg)
+        db.session.commit()
+        
+        # Send confirmation email
+        user = User.query.get(user_id)
+        send_email(
+            email,
+            f"Registration Confirmation: {event.name}",
+            f"""Hi {name},
+
+Thank you for registering for {event.name} on {event.date}.
+
+Event Details:
+- Date: {event.date}
+- Time: {event.start_time or 'TBA'}
+- Venue: {event.venue or 'TBA'}
+
+{'Payment will be collected at the venue.' if not event.is_free else ''}
+
+If this is your first time using our system, we've created an account for you that you can use to track your registrations.
+Email: {email}
+{'If you wish to access your account, you can use the password reset feature on the login page.' if not existing_user else ''}
+
+Regards,
+CEMS Team"""
+        )
+        
+        flash('Registration successful! Check your email for confirmation', 'success')
+        return redirect(url_for('events_list'))
+        
+    except Exception as e:
+        flash(f'Error registering for event: {str(e)}', 'danger')
+        return redirect(url_for('events_list'))
+
 @event_bp.route('/api/events/create', methods=['POST'])
 def create_event():
     try:
@@ -169,12 +288,30 @@ def create_event():
         # Registration deadline 
         registration_end_date = data.get('registration_end_date')
         
-        # Venue and seating
-        venue = data.get('venue')
+        # Venue information - updated structure
+        venue_name = data.get('venue_name')
+        venue_address = data.get('venue_address')
+        venue_lat = data.get('venue_lat')
+        venue_lng = data.get('venue_lng')
+        
+        # Create structured venue data
+        venue_data = {
+            "name": venue_name,
+            "address": venue_address,
+            "coordinates": {
+                "lat": venue_lat,
+                "lng": venue_lng
+            }
+        }
+        
+        # Combine venue name and address for legacy support
+        venue = f"{venue_name}, {venue_address}" if venue_name and venue_address else data.get('venue')
+        
+        # Seating
         seats_total = int(data.get('seats_total', 50))
         
         # Registration theme
-        registration_theme = data.get('registration_theme', 'minimalistic')
+        registration_theme = data.get('registration_theme', 'minimalistic-elegant')
         
         # Optional parent event
         parent_id = data.get('parent_event_id')
@@ -186,6 +323,16 @@ def create_event():
                 return jsonify({'error': 'Parent event not found'}), 404
         else:
             parent_id = None
+        
+        # Process resource requirements
+        resources_required = {
+            "projectors": int(data.get('req_projectors', 0)),
+            "sound": int(data.get('req_sound', 0)),
+            "chairs": int(data.get('req_chairs', 0)),
+            "tables": int(data.get('req_tables', 0)),
+            "lights": int(data.get('req_lights', 0)),
+            "volunteers": int(data.get('req_volunteers', 0))
+        }
                 
         # Create new event
         new_event = Event(
@@ -211,11 +358,8 @@ def create_event():
             organiser_id=session.get('user_id'),
             custom_data=json.dumps({
                 "registration_theme": registration_theme,
-                "resources_required": {
-                    "projectors": int(data.get('req_projectors', 0)),
-                    "sound": int(data.get('req_sound', 0)),
-                    "volunteers": int(data.get('req_volunteers', 0))
-                }
+                "resources_required": resources_required,
+                "venue_data": venue_data
             })
         )
         
@@ -250,9 +394,55 @@ def create_event():
             file_path = os.path.join('static/uploads/brochures', filename)
             brochure_file.save(file_path)
             new_event.brochure = file_path
+            
+        # Process sub-events if any
+        sub_events_data = {}
+        for key in data.keys():
+            if key.startswith('sub_events['):
+                # Extract sub event index and field name from key format: sub_events[0][name]
+                parts = key.replace('sub_events[', '').replace(']', '').split('[')
+                if len(parts) == 2:
+                    idx, field = parts
+                    if idx not in sub_events_data:
+                        sub_events_data[idx] = {}
+                    sub_events_data[idx][field] = data.get(key)
         
         # Add to events list
         db.session.add(new_event)
+        db.session.commit()
+        
+        # Create sub-events after main event is created
+        for idx, sub_event_data in sub_events_data.items():
+            # Create sub-event with same venue information as parent
+            sub_event = Event(
+                name=sub_event_data.get('name'),
+                description=sub_event_data.get('description', ''),
+                date=date,  # Use parent date as fallback
+                start_date=datetime.strptime(sub_event_data.get('start_date', start_date), '%Y-%m-%d'),
+                end_date=datetime.strptime(sub_event_data.get('end_date', end_date), '%Y-%m-%d'),
+                start_time=sub_event_data.get('start_time', start_time),
+                end_time=sub_event_data.get('end_time', end_time),
+                category=sub_event_data.get('category', category),
+                tag=sub_event_data.get('category', category),  # Default tag to category
+                venue=venue,  # Use parent venue
+                price=float(sub_event_data.get('price', 0)) if sub_event_data.get('is_free') != 'on' else 0,
+                is_free=sub_event_data.get('is_free') == 'on',
+                seats_total=int(sub_event_data.get('seats_total', 50)),
+                seats_available=int(sub_event_data.get('seats_total', 50)),
+                registration_end_date=datetime.strptime(registration_end_date, '%Y-%m-%d') if registration_end_date else None,
+                parent_event_id=new_event.id,
+                created_by=session.get('user_id'),
+                organiser_id=session.get('user_id'),
+                custom_data=json.dumps({
+                    "registration_theme": registration_theme,
+                    "resources_required": {},  # Sub-events share resources with parent
+                    "venue_data": venue_data  # Same venue data as parent
+                })
+            )
+            
+            db.session.add(sub_event)
+        
+        # Commit all sub-events
         db.session.commit()
         
         # If this is a sub-event, update parent
@@ -374,113 +564,10 @@ def delete_event(event_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@event_bp.route('/upload_event_exploration', methods=['POST'])
-def upload_event_exploration():
-    try:
-        if session.get('user_role') not in ['organiser', 'admin']:
-            return jsonify({'error': 'Unauthorized'}), 403
-            
-        event_id = request.form.get('event_id')
-        if not event_id:
-            return jsonify({'error': 'Event ID is required'}), 400
-        
-        # Check if event exists
-        event = Event.query.get(event_id)
-        if not event:
-            return jsonify({'error': 'Event not found'}), 404
-        
-        # Create event directory if it doesn't exist
-        event_dir = os.path.join(EVENT_EXPLORATIONS_DIR, event_id)
-        if not os.path.exists(event_dir):
-            os.makedirs(event_dir)
-        else:
-            # Clear existing files
-            for file in os.listdir(event_dir):
-                file_path = os.path.join(event_dir, file)
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-        
-        # Handle file upload
-        if 'exploration_files' not in request.files:
-            return jsonify({'error': 'No file part'}), 400
-        
-        file = request.files['exploration_files']
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
-        
-        # Save and extract zip file
-        if file and file.filename.endswith('.zip'):
-            zip_path = os.path.join(event_dir, secure_filename(file.filename))
-            file.save(zip_path)
-            
-            # Extract the zip file
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(event_dir)
-            
-            # Remove the zip after extraction
-            os.remove(zip_path)
-            
-            # Update event data
-            event.has_exploration = True
-            db.session.commit()
-            
-            # Notify participants about the new exploration experience
-            notify_participants_about_exploration(event, db, User, Registration, Notification)
-            
-            return jsonify({'success': True, 'message': 'Exploration files uploaded successfully'})
-        else:
-            return jsonify({'error': 'File must be a ZIP archive'}), 400
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@event_bp.route('/event_exploration/<int:event_id>')
-def event_exploration(event_id):
-    try:
-        event_dir = os.path.join(EVENT_EXPLORATIONS_DIR, str(event_id))
-        
-        # Check if event exploration exists
-        if not os.path.exists(event_dir):
-            return "Event exploration not found", 404
-        
-        # Look for index.html in the event directory
-        index_path = os.path.join(event_dir, 'index.html')
-        if os.path.exists(index_path):
-            # Serve the custom event exploration page
-            return send_from_directory(event_dir, 'index.html')
-        else:
-            return "Event exploration index file not found", 404
-        
-    except Exception as e:
-        return f"Error accessing event exploration: {e}", 500
-
-@event_bp.route('/event_explorations/<int:event_id>/<path:filename>')
-def event_explorations_files(event_id, filename):
-    """Serve static files from event exploration directories"""
-    try:
-        event_dir = os.path.join(EVENT_EXPLORATIONS_DIR, str(event_id))
-        return send_from_directory(event_dir, filename)
-    except Exception as e:
-        return f"Error serving event exploration file: {e}", 500
-
 def get_upload_path(folder):
     return os.path.join('static/uploads', folder)
 
-@event_bp.route('/events')
-def events():
-    try:
-        # Get featured events
-        featured_events = Event.query.filter_by(is_featured=True).all()
-        
-        # Get all other events with no parent
-        other_events = Event.query.filter_by(parent_event_id=None, is_featured=False).all()
-        
-        return render_template('events.html', featured_events=featured_events, other_events=other_events)
-    except Exception as e:
-        flash(f'Error loading events: {str(e)}', 'danger')
-        return redirect(url_for('main.index'))
+# Removing the duplicate '/events' route that conflicts with app.py
 
 @event_bp.route('/event/<int:event_id>')
 def event_detail(event_id):
@@ -497,14 +584,19 @@ def event_detail(event_id):
         
         # Get the custom UI theme for registration
         custom_data = {}
+        registration_theme = 'minimalist'  # Default theme
+        
         if event.custom_data:
             try:
                 custom_data = json.loads(event.custom_data)
+                registration_theme = custom_data.get('registration_theme', 'minimalist')
             except:
-                custom_data = {}
+                pass
                 
-        registration_theme = custom_data.get('registration_theme', 'minimalistic')
-        
+        # Make sure the theme exists in our available themes list
+        if registration_theme not in NEW_THEMES:
+            registration_theme = 'minimalist'  # Fallback to default
+            
         # Check if user is already registered
         is_registered = False
         if session.get('user_id'):
@@ -514,17 +606,23 @@ def event_detail(event_id):
             ).first()
             is_registered = reg is not None
             
+        # Add current datetime for comparison with registration_end_date
+        now = datetime.now()
+            
         return render_template(
             'event_detail.html', 
             event=event, 
             parent_event=parent_event,
             sub_events=sub_events,
             is_registered=is_registered,
-            registration_theme=registration_theme
+            registration_theme=registration_theme,
+            now=now,
+            custom_data=custom_data,
+            theme_assets_path='/static/theme_assets/'  # Add the correct path to theme assets
         )
     except Exception as e:
         flash(f'Error loading event details: {str(e)}', 'danger')
-        return redirect(url_for('event.events'))
+        return redirect(url_for('events_list'))
 
 @event_bp.route('/create-event', methods=['GET', 'POST'])
 def create_event_page():
@@ -751,5 +849,65 @@ def get_events():
         events = query.all()
         return jsonify([event.to_dict() for event in events])
         
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@event_bp.route('/preview_registration_theme/<theme>')
+def preview_registration_theme(theme):
+    """
+    Preview a registration theme with sample data
+    """
+    try:
+        if theme not in NEW_THEMES:
+            return f"Theme '{theme}' is not available.", 404
+
+        # Get event data from query parameters or use sample data
+        event_name = request.args.get('event_name', 'Sample Event')
+        event_description = request.args.get('event_description', 'This is a preview of how the registration form will look with this theme.')
+        is_preview = request.args.get('is_preview', 'false').lower() == 'true'
+
+        # Sample event data for preview
+        event_data = {
+            'name': event_name,
+            'start_date': datetime.now().strftime('%Y-%m-%d'),
+            'start_time': '10:00 AM',
+            'venue': 'Sample Venue, Location',
+            'description': event_description,
+            'organiser': 'Event Organiser',
+            'price': 500,
+            'is_free': False
+        }
+
+        # Create a context with additional theme-related variables
+        context = {
+            'event': event_data,
+            'is_preview': is_preview,
+            'theme_name': theme,
+            'theme_assets_path': '/static/theme_assets/',  # Fixed path - removed incorrect space
+            'static_url': '/static'
+        }
+
+        # Load the requested theme template
+        theme_template = f'registration_themes/{theme}.html'
+
+        # Render the theme with sample data and additional context
+        return render_template(theme_template, **context)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Error loading theme: {str(e)}", 500
+
+@event_bp.route('/api/registration/<int:event_id>/preview/<theme>', methods=['GET'])
+def api_preview_registration_theme(event_id, theme):
+    try:
+        if theme not in NEW_THEMES:
+            return jsonify({'error': f"Theme '{theme}' is not available."}), 404
+
+        event = Event.query.get_or_404(event_id)
+
+        # Pass the theme name and the event to the template - fixed path
+        return render_template(f'registration_themes/{theme}.html', 
+            event=event,
+            theme_assets_path='/static/theme_assets/')  # Fixed path - removed incorrect space
     except Exception as e:
         return jsonify({'error': str(e)}), 500

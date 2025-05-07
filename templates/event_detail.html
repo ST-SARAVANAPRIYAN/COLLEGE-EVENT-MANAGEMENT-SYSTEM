@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Roboto:wght@300;400;500&family=Quicksand:wght@400;500;600&family=Comic+Neue:wght@400;700&family=Monoton&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <style>
         /* Event Cover */
         .event-cover {
@@ -407,11 +409,22 @@
                         </div>
                     </div>
                     
+                    {% set custom_data = {} %}
+                    {% if event.custom_data %}
+                        {% set custom_data = event.custom_data | tojson | fromjson %}
+                    {% endif %}
+                    
                     <div class="event-meta-item">
                         <div class="event-meta-icon">
                             <i class="fas fa-map-marker-alt"></i>
                         </div>
-                        <div>{{ event.venue }}</div>
+                        <div>
+                            {% if custom_data.venue_data and custom_data.venue_data.name %}
+                                {{ custom_data.venue_data.name }}
+                            {% else %}
+                                {{ event.venue }}
+                            {% endif %}
+                        </div>
                     </div>
                     
                     <div class="event-meta-item">
@@ -456,6 +469,34 @@
                                         Your browser does not support the video tag.
                                     </video>
                                 </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Venue Location -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Venue Information</h3>
+                            
+                            {% set custom_data = {} %}
+                            {% if event.custom_data %}
+                                {% set custom_data = event.custom_data | tojson | fromjson %}
+                            {% endif %}
+                            
+                            {% if custom_data.venue_data %}
+                                <div class="mb-3">
+                                    <h5>{{ custom_data.venue_data.name }}</h5>
+                                    <p class="mb-2">
+                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                        {{ custom_data.venue_data.address }}
+                                    </p>
+                                </div>
+                                
+                                {% if custom_data.venue_data.coordinates and custom_data.venue_data.coordinates.lat and custom_data.venue_data.coordinates.lng %}
+                                    <div id="venue-map" style="height: 300px; width: 100%; border-radius: 8px;"></div>
+                                {% endif %}
+                            {% else %}
+                                <p><i class="fas fa-map-marker-alt me-2"></i> {{ event.venue }}</p>
                             {% endif %}
                         </div>
                     </div>
@@ -637,7 +678,7 @@
                                             </button>
                                         </form>
                                     {% else %}
-                                        <a href="/login?next=/event/{{ event.id }}" class="btn btn-primary w-100">
+                                         <a href="{{ url_for('auth.login', next='/event/' + event.id|string) }}" class="btn btn-primary w-100">
                                             <i class="fas fa-sign-in-alt me-2"></i> Login to Register
                                         </a>
                                     {% endif %}
@@ -714,111 +755,11 @@
             
             <!-- Registration Form (Customized based on theme) -->
             {% if not is_registered and status != "closed" and not session.get('user_id') %}
-                {% set custom_data = {} %}
-                {% if event.custom_data %}
-                    {% set custom_data = event.custom_data | tojson | fromjson %}
-                {% endif %}
-                
-                {% set theme = custom_data.registration_theme if custom_data.registration_theme else "minimalistic-elegant" %}
+                {% set theme = registration_theme if registration_theme else "minimalist" %}
                 
                 <div class="row mt-5">
                     <div class="col-lg-10 mx-auto">
-                        <div class="registration-section registration-{{ theme }}">
-                            <h3 class="text-center mb-4">Register for {{ event.name }}</h3>
-                            <p class="text-center mb-4">Fill in your details below to register for this event</p>
-                            
-                            <form action="/register-event/{{ event.id }}" method="POST" class="needs-validation" novalidate>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="name" class="form-label">Full Name*</label>
-                                        <input type="text" class="form-control" id="name" name="name" required>
-                                        <div class="invalid-feedback">Please enter your name</div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <label for="email" class="form-label">Email Address*</label>
-                                        <input type="email" class="form-control" id="email" name="email" required>
-                                        <div class="invalid-feedback">Please enter a valid email address</div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <label for="phone" class="form-label">Phone Number*</label>
-                                        <input type="tel" class="form-control" id="phone" name="phone" required>
-                                        <div class="invalid-feedback">Please enter your phone number</div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <label for="college" class="form-label">College/Institution*</label>
-                                        <input type="text" class="form-control" id="college" name="college" required>
-                                        <div class="invalid-feedback">Please enter your college name</div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <label for="department" class="form-label">Department*</label>
-                                        <select class="form-select" id="department" name="department" required>
-                                            <option value="">Select your department</option>
-                                            <option value="Computer Science">Computer Science</option>
-                                            <option value="Information Technology">Information Technology</option>
-                                            <option value="Electronics & Communication">Electronics & Communication</option>
-                                            <option value="Electrical & Electronics">Electrical & Electronics</option>
-                                            <option value="Mechanical Engineering">Mechanical Engineering</option>
-                                            <option value="Civil Engineering">Civil Engineering</option>
-                                            <option value="Business Administration">Business Administration</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                        <div class="invalid-feedback">Please select your department</div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <label for="year" class="form-label">Year of Study*</label>
-                                        <select class="form-select" id="year" name="year" required>
-                                            <option value="">Select your year</option>
-                                            <option value="1">1st Year</option>
-                                            <option value="2">2nd Year</option>
-                                            <option value="3">3rd Year</option>
-                                            <option value="4">4th Year</option>
-                                            <option value="5">5th Year</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                        <div class="invalid-feedback">Please select your year of study</div>
-                                    </div>
-                                    
-                                    {% if not event.is_free %}
-                                        <div class="col-12 mt-4">
-                                            <div class="alert alert-info">
-                                                <h5>Payment Information</h5>
-                                                <p>Registration fee: ₹{{ event.price }}</p>
-                                                <p class="mb-0">You will be redirected to the payment gateway after submitting this form.</p>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                    
-                                    <div class="col-12 mt-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
-                                            <label class="form-check-label" for="terms">
-                                                I agree to the terms and conditions of this event
-                                            </label>
-                                            <div class="invalid-feedback">You must agree to the terms and conditions</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-12 mt-4 text-center">
-                                        <button type="submit" class="btn btn-lg btn-primary px-5">
-                                            {% if event.is_free %}
-                                                Register Now
-                                            {% else %}
-                                                Proceed to Payment
-                                            {% endif %}
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                            
-                            <div class="text-center mt-4">
-                                <p>Already have an account? <a href="/login?next=/event/{{ event.id }}">Login</a> to register quickly</p>
-                            </div>
-                        </div>
+                        {% include 'registration_themes/' + theme + '.html' %}
                     </div>
                 </div>
             {% endif %}
@@ -859,34 +800,6 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Form validation
-            const forms = document.querySelectorAll('.needs-validation');
-            
-            Array.from(forms).forEach(form => {
-                form.addEventListener('submit', event => {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    
-                    form.classList.add('was-validated');
-                }, false);
-            });
-            
-            // Animated Navigation
-            window.addEventListener('scroll', function() {
-                const navbar = document.querySelector('.navbar');
-                if (window.scrollY > 50) {
-                    navbar.classList.add('bg-dark');
-                    navbar.classList.remove('navbar-dark');
-                    navbar.classList.add('navbar-dark');
-                } else {
-                    navbar.classList.remove('bg-dark');
-                }
-            });
-        });
-    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1jEJt9r2z1j1
 </body>
 </html>

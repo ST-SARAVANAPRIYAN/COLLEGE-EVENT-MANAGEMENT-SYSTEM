@@ -1,0 +1,206 @@
+{% extends "registration_base.html" %}
+
+{% block title %}{{ event.name }} - Registration{% endblock %}
+
+{% block theme_styles %}
+    .registration-container {
+      width: 100%;
+      max-width: 800px;
+      background-color: #ffffff;
+      padding: 3rem;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .decorative-border {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      bottom: 15px;
+      border: 1px solid rgba(180, 155, 120, 0.3);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .header-section {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+    
+    .header-section h1 {
+      font-size: 2.4rem;
+      font-weight: 400;
+      color: #333;
+      margin-bottom: 0.8rem;
+      letter-spacing: 1px;
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+    
+    .event-details-section {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #777;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      letter-spacing: 0.5px;
+    }
+    
+    .divider {
+      width: 60px;
+      height: 1px;
+      background-color: #b49b78;
+      margin: 1.5rem auto;
+    }
+    
+    .form-control, .form-select {
+      width: 100%;
+      padding: 0.8rem 0;
+      font-size: 1rem;
+      border: none;
+      border-bottom: 1px solid #e1e1e1;
+      background-color: transparent;
+      color: #333;
+      transition: all 0.3s;
+      font-family: 'Cormorant Garamond', serif;
+      letter-spacing: 0.5px;
+      border-radius: 0;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-bottom-color: #b49b78;
+      outline: none;
+      box-shadow: none;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 0.7rem;
+      letter-spacing: 0.5px;
+      font-family: 'Cormorant Garamond', serif;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    
+    .btn-elegant {
+      display: inline-block;
+      background-color: transparent;
+      color: #333;
+      border: 1px solid #b49b78;
+      padding: 0.8rem 2.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-family: 'Cormorant Garamond', serif;
+      margin-top: 1rem;
+      border-radius: 0;
+    }
+    
+    .btn-elegant:hover {
+      background-color: #b49b78;
+      color: white;
+    }
+{% endblock %}
+
+{% block submit_btn_class %}btn-elegant{% endblock %}
+
+{% block additional_styles %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+    body {
+      background-color: #f9f7f7;
+      font-family: 'Playfair Display', Georgia, serif;
+      color: #333;
+    }
+    
+    /* Elegant flourishes for decoration */
+    .flourish {
+      font-size: 1.5rem;
+      color: #b49b78;
+      margin: 0 0.5rem;
+    }
+    
+    .footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #999;
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+    }
+    
+    .form-group {
+      margin-bottom: 2rem;
+      position: relative;
+      transition: all 0.3s;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+      .registration-container {
+        padding: 2rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      .decorative-border {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+      }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="registration-container">
+    <div class="decorative-border"></div>
+    
+    <div class="header-section">
+      <h1>{{ event.name }}</h1>
+      <div class="divider"></div>
+      <p class="lead">We are delighted to invite you to register for this exclusive event</p>
+    </div>
+    
+    {% block registration_form %}
+    {{ super() }}
+    {% endblock %}
+    
+    <div class="footer">
+      <p>Please respond by {{ event.registration_end_date|default('the event date') }}</p>
+    </div>
+</div>
+
+<script>
+    // Elegant form interactions
+    document.addEventListener('DOMContentLoaded', function() {
+      const formControls = document.querySelectorAll('.form-control');
+      
+      // Add focus effects
+      formControls.forEach(control => {
+        control.addEventListener('focus', function() {
+          // Subtle animation for focused input
+          this.style.transition = 'transform 0.3s';
+          this.style.transform = 'translateX(5px)';
+          this.parentElement.style.borderLeft = '3px solid #b49b78';
+          this.parentElement.style.paddingLeft = '10px';
+        });
+        
+        control.addEventListener('blur', function() {
+          this.style.transform = 'translateX(0)';
+          this.parentElement.style.borderLeft = 'none';
+          this.parentElement.style.paddingLeft = '0';
+        });
+      });
+    });
+</script>
+{% endblock %}

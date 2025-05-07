@@ -1,0 +1,142 @@
+{% extends "registration_base.html" %}
+
+{% block title %}{{ event.name }} - Registration{% endblock %}
+
+{% block theme_styles %}
+    .registration-container {
+      width: 100%;
+      max-width: 500px;
+      background-color: #ffffff;
+      padding: 2.5rem;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
+    }
+    
+    .registration-container:hover {
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    
+    .header-section {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .header-section h1 {
+      font-size: 1.8rem;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 1.5rem;
+      position: relative;
+      padding-bottom: 0.5rem;
+    }
+    
+    .header-section h1::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 2px;
+      background-color: #333;
+    }
+    
+    .event-details-section {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .event-details-section i {
+      color: #555;
+    }
+    
+    .form-control, .form-select {
+      width: 100%;
+      padding: 0.8rem;
+      font-size: 1rem;
+      border: 1px solid #eaeaea;
+      border-radius: 4px;
+      background-color: #ffffff;
+      color: #333;
+      transition: all 0.2s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: #999;
+      outline: none;
+      box-shadow: none;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 0.5rem;
+    }
+    
+    .btn-minimalist {
+      display: inline-block;
+      background-color: #333;
+      color: white;
+      border: none;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    
+    .btn-minimalist:hover {
+      background-color: #555;
+    }
+{% endblock %}
+
+{% block submit_btn_class %}btn-minimalist{% endblock %}
+
+{% block additional_styles %}
+<style>
+    body {
+      background-color: #f7f7f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    .form-footer {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      text-align: center;
+      color: #999;
+    }
+    
+    /* Subtle animation on load */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .registration-container {
+      animation: fadeIn 0.6s ease forwards;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="registration-container">
+    <div class="header-section">
+      <h1>{{ event.name }}</h1>
+    </div>
+    
+    <p class="lead" style="text-align: center; margin-bottom: 2rem;">Join us for this simple yet impactful experience</p>
+    
+    {% block registration_form %}
+    {{ super() }}
+    {% endblock %}
+    
+    <div class="form-footer">
+      <p>By registering, you agree to our terms and conditions</p>
+    </div>
+</div>
+{% endblock %}

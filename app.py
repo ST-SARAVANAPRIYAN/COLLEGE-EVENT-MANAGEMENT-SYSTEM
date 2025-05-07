@@ -3,6 +3,7 @@ from flask_login import LoginManager, current_user, login_user, logout_user, log
 import os
 import pymysql
 from datetime import datetime, timedelta
+import json 
 
 from models.models import db, User, Event, Registration
 from modules.auth import auth_bp
@@ -31,6 +32,16 @@ login_manager.login_view = 'auth.login'
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# Add custom Jinja filters
+@app.template_filter('fromjson')
+def from_json(value):
+    if value is None:
+        return {}
+    try:
+        return json.loads(value)
+    except (ValueError, TypeError):
+        return value
 
 # Register blueprints
 app.register_blueprint(auth_bp)
@@ -81,29 +92,40 @@ def events_list():
         if date_filter:
             today = datetime.now().date()
             if date_filter == 'today':
-                query = query.filter(Event.start_date == today)
+                query = query.filter(db.func.date(Event.start_date) == today)
             elif date_filter == 'tomorrow':
                 tomorrow = today + timedelta(days=1)
-                query = query.filter(Event.start_date == tomorrow)
+                query = query.filter(db.func.date(Event.start_date) == tomorrow)
             elif date_filter == 'week':
                 week_end = today + timedelta(days=7)
-                query = query.filter(Event.start_date >= today, Event.start_date <= week_end)
+                query = query.filter(db.func.date(Event.start_date) >= today, db.func.date(Event.start_date) <= week_end)
             elif date_filter == 'month':
                 month_end = today + timedelta(days=30)
-                query = query.filter(Event.start_date >= today, Event.start_date <= month_end)
+                query = query.filter(db.func.date(Event.start_date) >= today, db.func.date(Event.start_date) <= month_end)
         
         if status:
             today = datetime.now().date()
             if status == 'open':
-                query = query.filter(Event.registration_end_date >= today, Event.seats_available > 0)
+                query = query.filter(
+                    ((Event.registration_end_date.is_(None)) | 
+                     (db.func.date(Event.registration_end_date) >= today)),
+                    Event.seats_available > 0
+                )
             elif status == 'closed':
-                query = query.filter((Event.registration_end_date < today) | (Event.seats_available <= 0))
+                query = query.filter(
+                    db.or_(
+                        db.and_(Event.registration_end_date.isnot(None), db.func.date(Event.registration_end_date) < today),
+                        Event.seats_available <= 0
+                    )
+                )
         
         if search:
             search_term = f"%{search}%"
-            query = query.filter((Event.name.like(search_term)) | 
-                               (Event.description.like(search_term)) | 
-                               (Event.venue.like(search_term)))
+            query = query.filter(db.or_(
+                Event.name.like(search_term),
+                Event.description.like(search_term),
+                Event.venue.like(search_term)
+            ))
         
         # Order by start date
         query = query.order_by(Event.start_date.asc())

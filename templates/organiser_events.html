@@ -1,0 +1,505 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}CEMS - Manage Events{% endblock %}
+
+{% block page_title %}Manage Events{% endblock %}
+
+{% block extra_styles %}
+.event-filters {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.event-card {
+    border-radius: 10px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.event-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.event-card .card-header {
+    padding: 15px;
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.event-card .card-body {
+    padding: 15px;
+}
+
+.event-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+.action-btn.edit:hover {
+    background-color: #3e64ff;
+    color: white;
+}
+
+.action-btn.delete:hover {
+    background-color: #f5365c;
+    color: white;
+}
+
+.action-btn.view:hover {
+    background-color: #2dce89;
+    color: white;
+}
+
+.action-btn.upload:hover {
+    background-color: #fb6340;
+    color: white;
+}
+
+.custom-tab {
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 5px 5px 0 0;
+    transition: all 0.2s;
+}
+
+.custom-tab.active {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-bottom-color: white;
+    margin-bottom: -1px;
+}
+
+.custom-tabs {
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.search-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.search-container input {
+    padding-left: 35px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    color: #6c757d;
+}
+
+#events-container {
+    min-height: 200px;
+}
+
+/* Event type indicators */
+.event-card.technical {
+    border-left: 4px solid #3e64ff;
+}
+
+.event-card.non-technical {
+    border-left: 4px solid #fb6340;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <!-- Filters and search -->
+        <div class="col-12">
+            <div class="event-filters">
+                <div class="row">
+                    <div class="col-md-9">
+                        <div class="custom-tabs d-flex">
+                            <div class="custom-tab active" data-tab="all-events">All Events</div>
+                            <div class="custom-tab ms-2" data-tab="upcoming">Upcoming</div>
+                            <div class="custom-tab ms-2" data-tab="past">Past</div>
+                            <div class="custom-tab ms-2" data-tab="drafts">Drafts</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="form-control" id="eventSearch" placeholder="Search events...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Event list container -->
+            <div id="all-events-content" class="tab-content active">
+                <div id="events-container" class="row">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading events...</span>
+                        </div>
+                        <p class="mt-2">Loading your events...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="upcoming-content" class="tab-content">
+                <div id="upcoming-events-container" class="row">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading upcoming events...</span>
+                        </div>
+                        <p class="mt-2">Loading upcoming events...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="past-content" class="tab-content">
+                <div id="past-events-container" class="row">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading past events...</span>
+                        </div>
+                        <p class="mt-2">Loading past events...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="drafts-content" class="tab-content">
+                <div id="draft-events-container" class="row">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading draft events...</span>
+                        </div>
+                        <p class="mt-2">Loading draft events...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center mt-4 mb-4">
+        <a href="{{ url_for('organiser.create_event') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Create New Event
+        </a>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteEventModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this event? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Delete Event</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let eventsList = [];
+    let currentEventIdToDelete = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tab functionality
+        const tabButtons = document.querySelectorAll('.custom-tab');
+        
+        tabButtons.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabContainer = this.parentElement;
+                const tabContents = document.querySelectorAll('.tab-content');
+                
+                // Remove active class from all tabs in this container
+                tabContainer.querySelectorAll('.custom-tab').forEach(t => t.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Hide all tab contents
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Show selected tab content
+                const tabName = this.getAttribute('data-tab');
+                document.getElementById(`${tabName}-content`).classList.add('active');
+                
+                // If clicking on a tab other than "all-events", load the specific events
+                if (tabName !== 'all-events') {
+                    loadFilteredEvents(tabName);
+                }
+            });
+        });
+        
+        // Initialize search functionality
+        const searchInput = document.getElementById('eventSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                filterEvents(this.value.toLowerCase());
+            });
+        }
+        
+        // Set up delete confirmation modal
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                if (currentEventIdToDelete) {
+                    deleteEvent(currentEventIdToDelete);
+                }
+            });
+        }
+        
+        // Load all events initially
+        loadEvents();
+    });
+    
+    async function loadEvents() {
+        try {
+            const eventsContainer = document.getElementById('events-container');
+            if (!eventsContainer) return;
+            
+            const response = await fetch('/api/organiser/events');
+            const data = await response.json();
+            
+            if (data.success && data.events) {
+                eventsList = data.events; // Store events for search/filtering
+                
+                if (data.events.length === 0) {
+                    eventsContainer.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <p class="mb-0">You haven't created any events yet.</p>
+                                <p class="mb-0">Click the "Create New Event" button to get started.</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                displayEvents(data.events, eventsContainer);
+            } else {
+                eventsContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <p>Failed to load events. Please try refreshing the page.</p>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading events:', error);
+            document.getElementById('events-container').innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <p>Error loading events. Please try again later.</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    async function loadFilteredEvents(filter) {
+        if (!eventsList || eventsList.length === 0) return;
+        
+        const now = new Date();
+        const containerId = filter === 'upcoming' ? 'upcoming-events-container' : 
+                           filter === 'past' ? 'past-events-container' : 
+                           filter === 'drafts' ? 'draft-events-container' : '';
+        
+        if (!containerId) return;
+        
+        const container = document.getElementById(containerId);
+        let filteredEvents = [];
+        
+        switch (filter) {
+            case 'upcoming':
+                filteredEvents = eventsList.filter(event => {
+                    const eventDate = new Date(event.date);
+                    return eventDate >= now;
+                });
+                break;
+                
+            case 'past':
+                filteredEvents = eventsList.filter(event => {
+                    const eventDate = new Date(event.date);
+                    return eventDate < now;
+                });
+                break;
+                
+            case 'drafts':
+                filteredEvents = eventsList.filter(event => event.is_draft === true);
+                break;
+        }
+        
+        if (filteredEvents.length === 0) {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <p class="mb-0">No ${filter} events found.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        displayEvents(filteredEvents, container);
+    }
+    
+    function displayEvents(events, container) {
+        let eventsHTML = '';
+        
+        events.forEach(event => {
+            const tagClass = event.tag === 'technical' ? 'primary' : 'warning';
+            const tagTextClass = event.tag === 'technical' ? '' : 'text-dark';
+            
+            eventsHTML += `
+            <div class="col-md-4 mb-4">
+                <div class="event-card ${event.tag}">
+                    <div class="card-header">
+                        <strong>${event.name}</strong>
+                        <div class="event-actions">
+                            <a href="/organiser/edit_event/${event.id}" class="action-btn edit" data-bs-toggle="tooltip" title="Edit Event">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button class="action-btn delete" onclick="showDeleteModal(${event.id})" data-bs-toggle="tooltip" title="Delete Event">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <span class="badge bg-${tagClass} ${tagTextClass} mb-2">${event.tag}</span>
+                                <div><i class="far fa-calendar-alt me-1"></i> ${event.date}</div>
+                                ${event.sub_events && event.sub_events.length > 0 ? 
+                                `<div class="mt-2"><small><strong>Sub-events:</strong> ${event.sub_events.length}</small></div>` : ''}
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success">${event.registration_count || 0} Registrations</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        
+        container.innerHTML = `<div class="row">${eventsHTML}</div>`;
+        
+        // Initialize tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    }
+    
+    function filterEvents(searchTerm) {
+        if (!eventsList || eventsList.length === 0) return;
+        
+        const eventsContainer = document.getElementById('events-container');
+        
+        if (searchTerm.trim() === '') {
+            displayEvents(eventsList, eventsContainer);
+            return;
+        }
+        
+        const filteredEvents = eventsList.filter(event => {
+            return event.name.toLowerCase().includes(searchTerm) || 
+                   event.description.toLowerCase().includes(searchTerm) ||
+                   event.tag.toLowerCase().includes(searchTerm) ||
+                   event.venue.toLowerCase().includes(searchTerm);
+        });
+        
+        if (filteredEvents.length === 0) {
+            eventsContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <p class="mb-0">No events match your search for "${searchTerm}".</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        displayEvents(filteredEvents, eventsContainer);
+    }
+    
+    function showDeleteModal(eventId) {
+        currentEventIdToDelete = eventId;
+        const modal = new bootstrap.Modal(document.getElementById('deleteEventModal'));
+        modal.show();
+    }
+    
+    async function deleteEvent(eventId) {
+        try {
+            const response = await fetch(`/api/events/${eventId}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            // Hide the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteEventModal'));
+            modal.hide();
+            
+            if (data.success) {
+                alert('Event deleted successfully!');
+                // Reload the events list
+                loadEvents();
+            } else {
+                alert('Error deleting event: ' + (data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error deleting event:', error);
+            alert('Error deleting event. Please try again.');
+            
+            // Hide the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteEventModal'));
+            modal.hide();
+        }
+    }
+</script>
+{% endblock %}

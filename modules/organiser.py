@@ -24,6 +24,67 @@ def dashboard():
     except Exception as e:
         return f"Error loading organiser dashboard: {e}", 500
 
+@organiser_bp.route('/organiser/events')
+@organiser_required
+def events():
+    try:
+        return render_template('organiser_events.html')
+    except Exception as e:
+        return f"Error loading events page: {e}", 500
+
+@organiser_bp.route('/organiser/create_event')
+@organiser_required
+def create_event():
+    try:
+        return render_template('organiser_create_event.html')
+    except Exception as e:
+        return f"Error loading create event page: {e}", 500
+
+@organiser_bp.route('/organiser/resources')
+@organiser_required
+def resources():
+    try:
+        return render_template('organiser_resources.html')
+    except Exception as e:
+        return f"Error loading resources page: {e}", 500
+
+@organiser_bp.route('/organiser/notifications')
+@organiser_required
+def notifications():
+    try:
+        return render_template('organiser_notifications.html')
+    except Exception as e:
+        return f"Error loading notifications page: {e}", 500
+
+@organiser_bp.route('/organiser/reports')
+@organiser_required
+def reports():
+    try:
+        return render_template('organiser_reports.html')
+    except Exception as e:
+        return f"Error loading reports page: {e}", 500
+
+@organiser_bp.route('/organiser/profile')
+@organiser_required
+def profile():
+    try:
+        user = User.query.get(session.get('user_id'))
+        return render_template('organiser_profile.html', user=user)
+    except Exception as e:
+        return f"Error loading profile page: {e}", 500
+
+@organiser_bp.route('/organiser/edit_event/<int:event_id>')
+@organiser_required
+def edit_event(event_id):
+    try:
+        event = Event.query.get_or_404(event_id)
+        # Check if event belongs to current organiser
+        if event.created_by != session.get('user_id') and session.get('user_role') != 'admin':
+            return redirect(url_for('organiser.events'))
+        return render_template('organiser_edit_event.html', event=event)
+    except Exception as e:
+        return f"Error loading edit event page: {e}", 500
+
 @organiser_bp.route('/api/registrations')
 @organiser_required
 def get_registrations():
@@ -372,41 +433,227 @@ def get_resources_by_event(event_id):
         return jsonify({'error': str(e)}), 500
 
 @organiser_bp.route('/api/organiser/dashboard-stats', methods=['GET'])
+@organiser_required
 def get_dashboard_stats():
     try:
-        if session.get('user_role') not in ['organiser', 'admin']:
-            return jsonify({'error': 'Unauthorized'}), 403
-            
         user_id = session.get('user_id')
         
         # Get events created by this organiser
-        events = Event.query.filter_by(organiser_id=user_id).all()
+        events = Event.query.filter_by(created_by=user_id).all()
+        event_count = len(events)
+        
+        # Get event IDs for registrations query
         event_ids = [e.id for e in events]
         
-        # Get resource allocations for these events
-        allocations = ResourceAllocation.query.filter(ResourceAllocation.event_id.in_(event_ids)).all()
+        # Get registrations for these events
+        registrations = Registration.query.filter(Registration.event_id.in_(event_ids)).all() if event_ids else []
+        registrations_count = len(registrations)
         
-        # Count total registrations
-        registrations_count = 0
-        for event in events:
-            registrations_count += len(event.registrations)
+        # Get resources allocated to these events
+        resource_count = 0
+        if event_ids:
+            resource_count = ResourceAllocation.query.filter(ResourceAllocation.event_id.in_(event_ids)).count()
         
-        # Get upcoming events
-        upcoming_events = [e for e in events if e.start_date and e.start_date > datetime.now()]
+        # Get notifications sent by this organiser
+        notification_count = Notification.query.filter_by(created_by=user_id).count()
         
-        # Get active events
-        active_events = [e for e in events if e.start_date and e.start_date <= datetime.now() and e.end_date and e.end_date >= datetime.now()]
+        # Get recent activity
+        recent_activity = []
         
-        # Get past events
-        past_events = [e for e in events if e.end_date and e.end_date < datetime.now()]
+        # Add recent registrations
+        recent_regs = Registration.query.filter(Registration.event_id.in_(event_ids)).order_by(
+            Registration.registration_date.desc()).limit(3).all() if event_ids else []
+            
+        for reg in recent_regs:
+            event = Event.query.get(reg.event_id)
+            user = User.query.get(reg.user_id)
+            if event and user:
+                recent_activity.append({
+                    'type': 'registration',
+                    'message': f'New registration for "{event.name}" by {user.name}',
+                    'time_ago': get_time_ago(reg.registration_date) if reg.registration_date else 'Recently'
+                })
+        
+        # Add recent events created
+        recent_events = Event.query.filter_by(created_by=user_id).order_by(
+            Event.created_at.desc()).limit(3).all()
+            
+        for event in recent_events:
+            recent_activity.append({
+                'type': 'event_created',
+                'message': f'You created a new event "{event.name}"',
+                'time_ago': get_time_ago(event.created_at) if event.created_at else 'Recently'
+            })
+        
+        # Add recent notifications
+        recent_notifs = Notification.query.filter_by(created_by=user_id).order_by(
+            Notification.created_at.desc()).limit(3).all()
+            
+        for notif in recent_notifs:
+            target = 'all participants' if notif.user_id is None else 'a participant'
+            recent_activity.append({
+                'type': 'notification',
+                'message': f'You sent notification to {target}',
+                'time_ago': get_time_ago(notif.created_at) if notif.created_at else 'Recently'
+            })
+        
+        # Sort activities by recency (assuming they all have created_at)
+        recent_activity.sort(key=lambda x: x['time_ago'], reverse=True)
         
         return jsonify({
-            'total_events': len(events),
-            'upcoming_events': len(upcoming_events),
-            'active_events': len(active_events),
-            'past_events': len(past_events),
-            'total_registrations': registrations_count,
-            'resource_allocations': len(allocations)
+            'success': True,
+            'stats': {
+                'events': event_count,
+                'registrations': registrations_count,
+                'resources': resource_count,
+                'notifications': notification_count
+            },
+            'recent_activity': recent_activity[:4]  # Limit to 4 most recent activities
         })
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def get_time_ago(date_time):
+    """Helper function to format time ago string"""
+    if not date_time:
+        return "Recently"
+        
+    now = datetime.now()
+    diff = now - date_time
+    
+    days = diff.days
+    
+    if days == 0:
+        hours = diff.seconds // 3600
+        if hours == 0:
+            minutes = diff.seconds // 60
+            if minutes == 0:
+                return "Just now"
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        return f"{hours} hour{'s' if hours > 1 else ''} ago"
+    elif days == 1:
+        return "Yesterday"
+    elif days < 7:
+        return f"{days} days ago"
+    elif days < 30:
+        weeks = days // 7
+        return f"{weeks} week{'s' if weeks > 1 else ''} ago"
+    else:
+        return date_time.strftime("%b %d, %Y")
+
+@organiser_bp.route('/api/organiser/events', methods=['GET'])
+@organiser_required
+def get_organiser_events():
+    try:
+        user_id = session.get('user_id')
+        
+        # Get all events created by this organiser
+        events = Event.query.filter_by(created_by=user_id).all()
+        
+        result = []
+        for event in events:
+            # For each event, get the registration count
+            registration_count = Registration.query.filter_by(event_id=event.id).count()
+            
+            # Get sub-event IDs
+            sub_events = []
+            if hasattr(event, 'sub_events'):
+                sub_events = [se.id for se in event.sub_events]
+                
+            event_data = event.to_dict()
+            event_data['registration_count'] = registration_count
+            event_data['sub_events'] = sub_events
+            
+            result.append(event_data)
+            
+        return jsonify({
+            'success': True,
+            'events': result
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@organiser_bp.route('/api/organiser/registrations', methods=['GET'])
+@organiser_required
+def get_organiser_registrations():
+    try:
+        user_id = session.get('user_id')
+        
+        # Get event IDs created by this organiser
+        event_ids = [e.id for e in Event.query.filter_by(created_by=user_id).all()]
+        
+        if not event_ids:
+            return jsonify({
+                'success': True,
+                'registrations': []
+            })
+        
+        # Get registrations for these events
+        registrations = Registration.query.filter(Registration.event_id.in_(event_ids)).all()
+        
+        result = []
+        for reg in registrations:
+            event = Event.query.get(reg.event_id)
+            user = User.query.get(reg.user_id)
+            
+            if event and user:
+                reg_data = reg.to_dict()
+                reg_data['event_name'] = event.name
+                reg_data['user_name'] = user.name
+                reg_data['user_email'] = user.email
+                
+                result.append(reg_data)
+                
+        return jsonify({
+            'success': True,
+            'registrations': result
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@organiser_bp.route('/api/organiser/notifications', methods=['GET'])
+@organiser_required
+def get_organiser_notifications():
+    try:
+        user_id = session.get('user_id')
+        
+        # Get notifications sent by this organiser
+        notifications = Notification.query.filter_by(created_by=user_id).order_by(
+            Notification.created_at.desc()).all()
+            
+        result = []
+        for notif in notifications:
+            notif_data = {
+                'id': notif.id,
+                'message': notif.message,
+                'user_id': notif.user_id,
+                'created_at': notif.created_at.strftime("%b %d, %Y %H:%M") if notif.created_at else None
+            }
+            
+            # Add recipient info if notification was sent to a specific user
+            if notif.user_id:
+                user = User.query.get(notif.user_id)
+                if user:
+                    notif_data['recipient_name'] = user.name
+                    notif_data['recipient_email'] = user.email
+            
+            result.append(notif_data)
+            
+        return jsonify({
+            'success': True,
+            'notifications': result
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500

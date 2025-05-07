@@ -1,0 +1,796 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}CEMS - Create Event{% endblock %}
+
+{% block page_title %}Create Event{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.10/dist/esri-leaflet.js"></script>
+<script src="https://unpkg.com/esri-leaflet-geocoder@3.1.4/dist/esri-leaflet-geocoder.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder@3.1.4/dist/esri-leaflet-geocoder.css">
+{% endblock %}
+
+{% block extra_styles %}
+.form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.form-section-title {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: bold;
+}
+
+.form-section-description {
+    margin-bottom: 1rem;
+    color: #6c757d;
+}
+
+.form-card {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.event-thumbnail {
+    width: 200px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+#map {
+    height: 350px;
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.map-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.location-preview {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    display: none;
+}
+
+.location-preview.active {
+    display: block;
+}
+
+.sub-events-container {
+    margin-top: 1rem;
+}
+
+.sub-event-card {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    position: relative;
+    background-color: #f8f9fa;
+}
+
+.remove-sub-event {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    cursor: pointer;
+    color: #dc3545;
+    z-index: 10;
+}
+
+.sub-event-tabs {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 10px;
+}
+
+.sub-event-tab {
+    padding: 5px 15px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    margin-right: 5px;
+    border-radius: 4px 4px 0 0;
+}
+
+.sub-event-tab:hover {
+    background-color: #e9ecef;
+}
+
+.sub-event-tab.active {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-bottom-color: #fff;
+    margin-bottom: -1px;
+}
+
+.sub-event-content {
+    display: none;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 0 0 4px 4px;
+}
+
+.sub-event-content.active {
+    display: block;
+}
+
+.sub-event-map {
+    height: 250px;
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.resource-row {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.resource-select {
+    flex: 1;
+    margin-right: 15px;
+}
+
+.quantity-input {
+    width: 80px;
+}
+
+.resource-actions {
+    margin-left: 10px;
+}
+
+.resource-list {
+    margin-top: 1rem;
+}
+
+/* Registration Theme Selection Styles */
+.registration-themes-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 10px;
+    border-radius: 12px;
+    background-color: rgba(0,0,0,0.02);
+}
+
+.registration-theme-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    position: relative;
+    height: 160px;
+    border: 2px solid transparent;
+}
+
+.registration-theme-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.2);
+}
+
+.registration-theme-card.selected {
+    border: 3px solid #3e64ff;
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(62, 100, 255, 0.4);
+}
+
+.registration-theme-card.selected::after {
+    content: "\f00c";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    background-color: #3e64ff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(62, 100, 255, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(62, 100, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(62, 100, 255, 0); }
+}
+
+.theme-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.75);
+    color: white;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: capitalize;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.registration-theme-card:hover .theme-name {
+    background: rgba(0,0,0,0.85);
+    padding-bottom: 12px;
+    color: #fff;
+}
+
+/* Theme styles - only include themes from registration_themes folder */
+.theme-minimalist {
+    background: white;
+    background-image: linear-gradient(to right, #f8f9fa, #ffffff);
+    transition: all 0.3s ease;
+}
+
+.theme-tech {
+    background-color: #0c0e13;
+    background-image: url('/static/theme_assets/tech/tech_background.jpg');
+    background-size: cover;
+    background-position: center;
+    transition: all 0.3s ease;
+}
+
+.theme-creative {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    background-image: url('/static/theme_assets/creative/creative_theme_background.gif');
+    background-size: cover;
+    background-position: center;
+    transition: all 0.3s ease;
+}
+
+.theme-elegant {
+    background: linear-gradient(to right, #000000, #434343);
+    transition: all 0.3s ease;
+}
+
+.theme-retro {
+    background-color: #f8e8c9;
+    background-image: url('/static/theme_assets/retro/retro_background.jpg');
+    background-size: cover;
+    background-position: center;
+    transition: all 0.3s ease;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <form id="createEventForm" method="POST" action="/api/events/create" enctype="multipart/form-data">
+        <!-- Basic Information Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">Basic Information</h3>
+            <p class="form-section-description">Enter the basic details of your event that participants will see first.</p>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="eventName" class="form-label">Event Name*</label>
+                    <input type="text" class="form-control" id="eventName" name="name" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="eventTitle" class="form-label">Display Title</label>
+                    <input type="text" class="form-control" id="eventTitle" name="title" placeholder="Leave blank to use event name">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="eventCategory" class="form-label">Category*</label>
+                    <select class="form-select" id="eventCategory" name="category" required>
+                        <option value="" selected disabled>Select category</option>
+                        <option value="academic">Academic</option>
+                        <option value="cultural">Cultural</option>
+                        <option value="sports">Sports</option>
+                        <option value="technical">Technical</option>
+                        <option value="workshop">Workshop</option>
+                        <option value="seminar">Seminar</option>
+                        <option value="competition">Competition</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="eventTags" class="form-label">Tags</label>
+                    <input type="text" class="form-control" id="eventTags" name="tags" placeholder="Comma-separated tags (e.g. coding, fun, outdoor)">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="eventDescription" class="form-label">Description*</label>
+                <textarea class="form-control" id="eventDescription" name="description" rows="4" required></textarea>
+            </div>
+        </div>
+        
+        <!-- Date and Time Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">Date and Time</h3>
+            <p class="form-section-description">Specify when your event will take place.</p>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="startDate" class="form-label">Start Date*</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="startTime" class="form-label">Start Time*</label>
+                    <input type="time" class="form-control" id="startTime" name="start_time" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="endDate" class="form-label">End Date*</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="endTime" class="form-label">End Time*</label>
+                    <input type="time" class="form-control" id="endTime" name="end_time" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="registrationEndDate" class="form-label">Registration Deadline</label>
+                <input type="date" class="form-control" id="registrationEndDate" name="registration_end_date">
+                <small class="text-muted">Leave blank if registration is open until the event starts</small>
+            </div>
+        </div>
+        
+        <!-- Venue and Location Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">Venue and Location</h3>
+            <p class="form-section-description">Provide details about where your event will take place.</p>
+            
+            <div class="mb-3">
+                <label for="venueName" class="form-label">Venue Name*</label>
+                <input type="text" class="form-control" id="venueName" name="venue" required placeholder="e.g. Main Auditorium">
+            </div>
+            
+            <div class="mb-3">
+                <label for="venueAddress" class="form-label">Address*</label>
+                <textarea class="form-control" id="venueAddress" name="venue_address" rows="2" placeholder="Enter the complete address of the venue" required></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Map Location*</label>
+                <div class="map-controls">
+                    <div class="flex-grow-1">
+                        <input type="text" class="form-control" id="locationSearch" placeholder="Search for a location...">
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" id="searchLocationBtn">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="useCurrentLocation">
+                        <i class="fas fa-map-marker-alt"></i> Use My Location
+                    </button>
+                </div>
+                <div id="map"></div>
+                
+                <div class="location-preview" id="locationPreview">
+                    <div><strong>Selected Location:</strong> <span id="selectedLocationText"></span></div>
+                    <div><strong>Coordinates:</strong> <span id="selectedCoordinates"></span></div>
+                </div>
+                
+                <input type="hidden" id="locationLat" name="location_lat" required>
+                <input type="hidden" id="locationLng" name="location_lng" required>
+            </div>
+        </div>
+        
+        <!-- Pricing and Registration Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">Pricing and Registration</h3>
+            <p class="form-section-description">Set up the pricing and registration options for your event.</p>
+            
+            <div class="mb-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="isFreeCheck" name="is_free">
+                    <label class="form-check-label" for="isFreeCheck">
+                        This is a free event
+                    </label>
+                </div>
+            </div>
+            
+            <div class="mb-3" id="priceContainer">
+                <label for="eventPrice" class="form-label">Price (₹)*</label>
+                <input type="number" class="form-control" id="eventPrice" name="price" min="0" step="0.01" value="0">
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="seatsTotal" class="form-label">Total Seats</label>
+                    <input type="number" class="form-control" id="seatsTotal" name="seats_total" min="1" value="50">
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">Registration Theme</label>
+                <p class="text-muted mb-3">Choose a visually appealing theme for your event registration page</p>
+                
+                <input type="hidden" id="registrationThemeInput" name="registration_theme" value="minimalist">
+                
+                <div class="registration-themes-container">
+                    <div class="registration-theme-card theme-minimalist" data-theme="minimalist">
+                        <button type="button" class="theme-preview-btn" onclick="previewRegistrationTheme('minimalist')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="theme-name">Minimalist</div>
+                    </div>
+                    
+                    <div class="registration-theme-card theme-tech" data-theme="tech">
+                        <button type="button" class="theme-preview-btn" onclick="previewRegistrationTheme('tech')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="theme-name">Tech</div>
+                    </div>
+                    
+                    <div class="registration-theme-card theme-creative" data-theme="creative">
+                        <button type="button" class="theme-preview-btn" onclick="previewRegistrationTheme('creative')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="theme-name">Creative</div>
+                    </div>
+                    
+                    <div class="registration-theme-card theme-elegant" data-theme="elegant">
+                        <button type="button" class="theme-preview-btn" onclick="previewRegistrationTheme('elegant')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="theme-name">Elegant</div>
+                    </div>
+                    
+                    <div class="registration-theme-card theme-retro" data-theme="retro">
+                        <button type="button" class="theme-preview-btn" onclick="previewRegistrationTheme('retro')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="theme-name">Retro</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Media and Files Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">Media and Files</h3>
+            <p class="form-section-description">Upload images, videos, and documents related to your event.</p>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="eventImage" class="form-label">Event Image</label>
+                    <input type="file" class="form-control" id="eventImage" name="image" accept="image/*">
+                    <div class="mt-2" id="imagePreview"></div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="coverImage" class="form-label">Cover Image</label>
+                    <input type="file" class="form-control" id="coverImage" name="cover_image" accept="image/*">
+                    <div class="mt-2" id="coverPreview"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="eventVideo" class="form-label">Video</label>
+                    <input type="file" class="form-control" id="eventVideo" name="video" accept="video/*">
+                    <small class="text-muted">Max size: 100MB</small>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="eventBrochure" class="form-label">Brochure/PDF</label>
+                    <input type="file" class="form-control" id="eventBrochure" name="brochure" accept=".pdf">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sub-events Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">Sub-events (Optional)</h3>
+            <p class="form-section-description">Add smaller events that are part of this main event.</p>
+            
+            <div class="sub-events-container" id="subEventsContainer"></div>
+            
+            <button type="button" class="btn btn-outline-primary" id="addSubEventBtn">
+                <i class="fas fa-plus"></i> Add Sub-event
+            </button>
+        </div>
+        
+        <!-- Resources Required Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">Resources Required (Optional)</h3>
+            <p class="form-section-description">Specify the resources you need for this event.</p>
+            
+            <div class="resource-list" id="resourcesContainer">
+                <div class="resource-row">
+                    <div class="resource-select">
+                        <select class="form-select" name="resource_type[]">
+                            <option value="projector">Projector</option>
+                            <option value="microphone">Microphone</option>
+                            <option value="chairs">Chairs</option>
+                            <option value="tables">Tables</option>
+                            <option value="sound_system">Sound System</option>
+                            <option value="lighting">Lighting System</option>
+                            <option value="computer">Computers</option>
+                        </select>
+                    </div>
+                    <div class="quantity-input">
+                        <input type="number" class="form-control" name="resource_quantity[]" min="1" value="1">
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-outline-secondary mt-2" id="addResourceBtn">
+                <i class="fas fa-plus"></i> Add Another Resource
+            </button>
+        </div>
+        
+        <!-- Submit Section -->
+        <div class="form-section text-center">
+            <button type="submit" class="btn btn-primary btn-lg px-5">Create Event</button>
+            <button type="button" class="btn btn-outline-secondary btn-lg px-5 ms-2" id="saveAsDraftBtn">Save as Draft</button>
+        </div>
+        
+        <!-- Hidden field for draft status -->
+        <input type="hidden" name="is_draft" id="isDraft" value="0">
+    </form>
+</div>
+
+<!-- Theme Preview Modal -->
+<div class="modal fade" id="themePreviewModal" tabindex="-1" aria-labelledby="themePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="themePreviewModalLabel">Registration Theme Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="themePreviewFrame" style="width: 100%; height: 600px; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="useThemeBtn">Use This Theme</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let map, marker;
+    let defaultLatLng = [13.0827, 80.2707]; // Chennai as default
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the map
+        initializeMap();
+        
+        // Toggle price input based on "is free" checkbox
+        const isFreeCheck = document.getElementById('isFreeCheck');
+        const priceInput = document.getElementById('eventPrice');
+        const priceContainer = document.getElementById('priceContainer');
+        
+        isFreeCheck.addEventListener('change', function() {
+            priceContainer.style.display = this.checked ? 'none' : 'block';
+            if (this.checked) {
+                priceInput.value = '0';
+            }
+        });
+        
+        // Image preview functionality
+        document.getElementById('eventImage').addEventListener('change', function(e) {
+            previewImage(e.target, 'imagePreview');
+        });
+        
+        document.getElementById('coverImage').addEventListener('change', function(e) {
+            previewImage(e.target, 'coverPreview');
+        });
+        
+        // Add sub-event functionality
+        document.getElementById('addSubEventBtn').addEventListener('click', addSubEvent);
+        
+        // Add resource functionality
+        document.getElementById('addResourceBtn').addEventListener('click', addResourceRow);
+        
+        // Save as draft functionality
+        document.getElementById('saveAsDraftBtn').addEventListener('click', function() {
+            document.getElementById('isDraft').value = '1';
+            document.getElementById('createEventForm').submit();
+        });
+        
+        // Form submission
+        document.getElementById('createEventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitForm();
+        });
+
+        // Set up theme selection
+        const themeCards = document.querySelectorAll('.registration-theme-card');
+        const themeInput = document.getElementById('registrationThemeInput');
+        
+        // Mark the default theme as selected on page load
+        themeCards.forEach(card => {
+            const theme = card.getAttribute('data-theme');
+            
+            // Select the minimalist theme by default
+            if (theme === 'minimalist') {
+                card.classList.add('selected');
+                themeInput.value = theme;
+            }
+            
+            // Add click listener to the card
+            card.addEventListener('click', function() {
+                // Remove selected class from all cards
+                themeCards.forEach(c => c.classList.remove('selected'));
+                
+                // Add selected to clicked card
+                this.classList.add('selected');
+                
+                // Update the hidden input
+                themeInput.value = this.getAttribute('data-theme');
+            });
+        });
+    });
+    
+    // Map initialization
+    function initializeMap() {
+        // Initialize the map
+        map = L.map('map').setView(defaultLatLng, 13);
+        
+        // Add tile layer - using only OpenStreetMap (no satellite view)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Initial marker
+        marker = L.marker(defaultLatLng, { draggable: true }).addTo(map);
+        
+        // Update coordinates when marker is moved
+        marker.on('dragend', function(e) {
+            updateSelectedLocation(marker.getLatLng());
+        });
+        
+        // Click on map to move marker
+        map.on('click', function(e) {
+            marker.setLatLng(e.latlng);
+            updateSelectedLocation(e.latlng);
+        });
+        
+        // Search location button click handler
+        document.getElementById('searchLocationBtn').addEventListener('click', function() {
+            const searchQuery = document.getElementById('locationSearch').value;
+            if (searchQuery.trim().length > 0) {
+                searchLocation(searchQuery);
+            }
+        });
+        
+        // Enter key in search input
+        document.getElementById('locationSearch').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const searchQuery = document.getElementById('locationSearch').value;
+                if (searchQuery.trim().length > 0) {
+                    searchLocation(searchQuery);
+                }
+            }
+        });
+        
+        // Use current location button
+        document.getElementById('useCurrentLocation').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    // Success callback
+                    function(position) {
+                        const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+                        marker.setLatLng(latlng);
+                        map.setView(latlng, 15);
+                        updateSelectedLocation(latlng);
+                        
+                        // Reverse geocode to get address
+                        reverseGeocode(latlng);
+                    },
+                    // Error callback
+                    function(error) {
+                        console.error("Error getting location:", error.message);
+                        alert("Unable to get your current location. Please check your browser permissions.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+    }
+    
+    // Rest of the map and form handling functions
+    
+    // Preview registration theme function
+    let currentPreviewTheme = 'minimalist';
+    
+    function previewRegistrationTheme(theme) {
+        currentPreviewTheme = theme;
+        
+        // Get event name from form or use placeholder
+        const eventName = document.getElementById('eventName').value || 'Sample Event';
+        const eventDescription = document.getElementById('eventDescription').value || 'This is a sample event description for preview purposes.';
+        
+        // Set iframe source to preview the theme
+        const previewFrame = document.getElementById('themePreviewFrame');
+        const previewUrl = `/preview_registration_theme/${theme}?event_name=${encodeURIComponent(eventName)}&event_description=${encodeURIComponent(eventDescription)}&is_preview=true`;
+        
+        // Update modal title
+        document.getElementById('themePreviewModalLabel').textContent = 
+            `${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme Preview`;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('themePreviewModal'));
+        modal.show();
+        
+        // Give the iframe time to load before trying to access its contents
+        previewFrame.onload = function() {
+            try {
+                // Make sure theme styles are properly applied in the preview
+                if (previewFrame.contentWindow.document.body) {
+                    previewFrame.contentWindow.document.body.classList.add(`theme-${theme}`);
+                }
+            } catch(e) {
+                console.error("Error updating theme preview:", e);
+            }
+        };
+        
+        // Set the iframe source after setting up the onload handler
+        previewFrame.src = previewUrl;
+    }
+    
+    // Set up the "Use This Theme" button functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('useThemeBtn').addEventListener('click', function() {
+            // Update theme selection
+            const themeCards = document.querySelectorAll('.registration-theme-card');
+            const themeInput = document.getElementById('registrationThemeInput');
+            
+            // Remove selected class from all cards
+            themeCards.forEach(card => {
+                card.classList.remove('selected');
+                if (card.getAttribute('data-theme') === currentPreviewTheme) {
+                    card.classList.add('selected');
+                }
+            });
+            
+            // Update hidden input value
+            themeInput.value = currentPreviewTheme;
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('themePreviewModal'));
+            modal.hide();
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,614 @@
+{% extends "registration_base.html" %}
+
+{% block title %}{{ event.name }} - Registration{% endblock %}
+
+{% block theme_styles %}
+    .registration-container {
+        background-color: rgba(248, 232, 201, 0.75); /* Made more transparent */
+        max-width: 750px;
+        padding: 2.5rem;
+        box-shadow: 5px 5px 0px #5f4b32;
+        border-radius: 0;
+        border: 3px solid #5f4b32;
+        font-family: 'Courier New', monospace;
+        position: relative;
+        z-index: 5;
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+        backdrop-filter: blur(3px); /* Added blur effect */
+    }
+    
+    .header-section h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #5f4b32;
+        margin-bottom: 1rem;
+        font-family: 'Monoton', cursive;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+    
+    .event-details-section {
+        background-color: rgba(240, 222, 180, 0.7); /* Made more transparent */
+        padding: 1.5rem;
+        border: 2px solid #5f4b32;
+        margin-bottom: 2rem;
+        backdrop-filter: blur(2px); /* Added blur effect */
+    }
+    
+    .event-details-section i {
+        color: #8b6b4a;
+        width: 20px;
+    }
+    
+    .form-control, .form-select {
+        background-color: rgba(248, 232, 201, 0.6); /* Made form fields more transparent */
+        border: 2px solid #5f4b32;
+        border-radius: 0;
+        padding: 0.7rem;
+        color: #5f4b32;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: #f0deb4;
+        border-color: #8b6b4a;
+        box-shadow: 3px 3px 0 #5f4b32;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #5f4b32;
+    }
+    
+    .btn-retro {
+        background-color: #5f4b32;
+        border-color: #5f4b32;
+        color: #f8e8c9;
+        border-radius: 0;
+        box-shadow: 3px 3px 0 #8b6b4a;
+        transition: all 0.3s;
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+    }
+    
+    .btn-retro:hover {
+        background-color: #8b6b4a;
+        border-color: #5f4b32;
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 #8b6b4a;
+    }
+    
+    /* Make sure form elements are visible */
+    .registration-form-section {
+        position: relative;
+        z-index: 11;
+    }
+{% endblock %}
+
+{% block submit_btn_class %}btn-retro{% endblock %}
+
+{% block additional_styles %}
+<link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
+<style>
+    body {
+        height: 100vh;
+        overflow: auto;
+        background-color: #f3d9a5;
+        background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(95, 75, 50, 0.1) 20px, rgba(95, 75, 50, 0.1) 40px);
+        font-family: 'Courier New', monospace;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .invalid-feedback {
+        color: #863a29;
+        font-weight: bold;
+    }
+    
+    /* Adding some retro decorative elements */
+    .registration-container:before {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px dashed #8b6b4a;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .parallax-wrapper {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        perspective: 1500px;
+        z-index: -1;
+    }
+    .parallax-item {
+        position: absolute;
+        transform-style: preserve-3d;
+        transform: translate(-50%, -50%);
+        will-change: transform;
+        pointer-events: none;
+    }
+    .parallax-item img {
+        display: block;
+        width: 100%;
+    }
+    
+    /* Floating animation for images with vintage bobbing effect */
+    @keyframes vintage-float {
+        0% {
+            transform: translateY(0px) rotate(0deg);
+        }
+        25% {
+            transform: translateY(-8px) rotate(1deg);
+        }
+        50% {
+            transform: translateY(0px) rotate(0deg);
+        }
+        75% {
+            transform: translateY(8px) rotate(-1deg);
+        }
+        100% {
+            transform: translateY(0px) rotate(0deg);
+        }
+    }
+    
+    @keyframes vintage-float-reverse {
+        0% {
+            transform: translateY(0px) rotate(0deg);
+        }
+        25% {
+            transform: translateY(8px) rotate(-1deg);
+        }
+        50% {
+            transform: translateY(0px) rotate(0deg);
+        }
+        75% {
+            transform: translateY(-8px) rotate(1deg);
+        }
+        100% {
+            transform: translateY(0px) rotate(0deg);
+        }
+    }
+    
+    @keyframes vintage-rotate {
+        0% {
+            transform: rotate(0deg);
+        }
+        50% {
+            transform: rotate(2deg);
+        }
+        100% {
+            transform: rotate(0deg);
+        }
+    }
+    
+    /* Apply different floating animations to specific images */
+    .parallax-item.retro-1 img {
+        animation: vintage-float 7s ease-in-out infinite;
+    }
+    
+    .parallax-item.retro-2 img {
+        animation: vintage-float 9s ease-in-out infinite;
+        animation-delay: 0.5s;
+    }
+    
+    .parallax-item.retro-3 img {
+        animation: vintage-float 8s ease-in-out infinite;
+        animation-delay: 1s;
+    }
+
+    .parallax-item.retro-4 img {
+        animation: vintage-float 10s ease-in-out infinite;
+        animation-delay: 1.5s;
+    }
+    
+    .parallax-item.retro-5 img {
+        animation: vintage-float-reverse 9s ease-in-out infinite;
+        animation-delay: 0.8s;
+    }
+    
+    .parallax-item.retro-6 img {
+        animation: vintage-rotate 12s ease-in-out infinite;
+        animation-delay: 1.2s;
+    }
+    
+    .parallax-item.retro-7 img {
+        animation: vintage-float 11s ease-in-out infinite;
+        animation-delay: 0.3s;
+    }
+    
+    .parallax-item.retro-8 img {
+        animation: vintage-float-reverse 8.5s ease-in-out infinite;
+        animation-delay: 1.7s;
+    }
+    
+    .parallax-item.retro-9 img {
+        animation: vintage-float 10.5s ease-in-out infinite;
+        animation-delay: 0.9s;
+    }
+
+    .parallax-item.retro-10 img {
+        animation: vintage-float-reverse 9.5s ease-in-out infinite;
+        animation-delay: 1.1s;
+    }
+    
+    .parallax-item.retro-11 img {
+        animation: vintage-float 8.8s ease-in-out infinite;
+        animation-delay: 0.6s;
+    }
+    
+    .parallax-item.retro-12 img {
+        animation: vintage-rotate 11s ease-in-out infinite;
+        animation-delay: 1.4s;
+    }
+    
+    .parallax-item.retro-13 img {
+        animation: vintage-float-reverse 10.2s ease-in-out infinite;
+        animation-delay: 0.2s;
+    }
+    
+    .parallax-item.retro-14 img {
+        animation: vintage-float 9.3s ease-in-out infinite;
+        animation-delay: 1.6s;
+    }
+    
+    .parallax-item.retro-15 img {
+        animation: vintage-rotate 12.5s ease-in-out infinite;
+        animation-delay: 0.4s;
+    }
+    
+    .parallax-item.retro-16 img {
+        animation: vintage-float 7.5s ease-in-out infinite;
+        animation-delay: 1.8s;
+    }
+    
+    .parallax-item.retro-17 img {
+        animation: vintage-float-reverse 10.8s ease-in-out infinite;
+        animation-delay: 0.7s;
+    }
+    
+    .parallax-item.retro-18 img {
+        animation: vintage-float 8.2s ease-in-out infinite;
+        animation-delay: 1.3s;
+    }
+    
+    .parallax-item.retro-19 img {
+        animation: vintage-rotate 11.5s ease-in-out infinite;
+        animation-delay: 0.5s;
+    }
+    
+    .parallax-item.retro-20 img {
+        animation: vintage-float-reverse 9.8s ease-in-out infinite;
+        animation-delay: 1.9s;
+    }
+    
+    /* Fix z-index for parallax elements */
+    .parallax-item.retro-bg {
+        width: 100%;
+        height: 100%;
+        top: 50%;
+        left: 50%;
+        z-index: -10;  /* Background should be the furthest back */
+    }
+    .parallax-item.retro-1 {
+        width: 150px;
+        top: 25%;
+        left: 20%;
+        z-index: -2;
+    }
+    .parallax-item.retro-2 {
+        width: 180px;
+        top: 65%;
+        left: 85%;
+        z-index: -3;
+    }
+    .parallax-item.retro-3 {
+        width: 130px;
+        top: 75%;
+        left: 30%;
+        z-index: -4;
+    }
+    .parallax-item.retro-4 {
+        width: 160px;
+        top: 20%;
+        left: 70%;
+        z-index: -5;
+    }
+    .parallax-item.retro-5 {
+        width: 140px;
+        top: 40%;
+        left: 12%;
+        z-index: -6;
+    }
+    .parallax-item.retro-6 {
+        width: 120px;
+        top: 80%;
+        left: 60%;
+        z-index: -7;
+    }
+    .parallax-item.retro-7 {
+        width: 160px;
+        top: 15%;
+        left: 40%;
+        z-index: -8;
+    }
+    .parallax-item.retro-8 {
+        width: 140px;
+        top: 50%;
+        left: 90%;
+        z-index: -3;
+    }
+    .parallax-item.retro-9 {
+        width: 170px;
+        top: 60%;
+        left: 45%;
+        z-index: -4;
+    }
+    .parallax-item.retro-10 {
+        width: 145px;
+        top: 35%;
+        left: 75%;
+        z-index: -5;
+    }
+    
+    .parallax-item.retro-11 {
+        width: 130px;
+        top: 85%;
+        left: 15%;
+        z-index: -6;
+    }
+    
+    .parallax-item.retro-12 {
+        width: 155px;
+        top: 10%;
+        left: 55%;
+        z-index: -7;
+    }
+    
+    .parallax-item.retro-13 {
+        width: 120px;
+        top: 70%;
+        left: 80%;
+        z-index: -8;
+    }
+    
+    .parallax-item.retro-14 {
+        width: 165px;
+        top: 25%;
+        left: 5%;
+        z-index: -3;
+    }
+    
+    .parallax-item.retro-15 {
+        width: 125px;
+        top: 55%;
+        left: 25%;
+        z-index: -4;
+    }
+    
+    .parallax-item.retro-16 {
+        width: 150px;
+        top: 5%;
+        left: 85%;
+        z-index: -5;
+    }
+    
+    .parallax-item.retro-17 {
+        width: 135px;
+        top: 90%;
+        left: 50%;
+        z-index: -6;
+    }
+    
+    .parallax-item.retro-18 {
+        width: 160px;
+        top: 30%;
+        left: 35%;
+        z-index: -7;
+    }
+    
+    .parallax-item.retro-19 {
+        width: 140px;
+        top: 75%;
+        left: 10%;
+        z-index: -8;
+    }
+    
+    .parallax-item.retro-20 {
+        width: 155px;
+        top: 45%;
+        left: 65%;
+        z-index: -5;
+    }
+
+    /* Add a vintage film grain effect */
+    .grain-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWx0ZXI9InVybCgjYSkiIG9wYWNpdHk9Ii4wNSIvPjwvc3ZnPg==');
+        opacity: 0.3;
+        z-index: 100;
+        pointer-events: none;
+    }
+    
+    /* Retro stamp */
+    .retro-stamp {
+        position: absolute;
+        top: -15px;
+        right: -15px;
+        background: #f44336;
+        color: #fff;
+        padding: 5px 15px;
+        transform: rotate(15deg);
+        font-weight: bold;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        font-size: 0.9rem;
+        border: 1px dashed #fff;
+        outline: 2px solid #f44336;
+        z-index: 10;
+    }
+    
+    /* Decorative border */
+    .decorative-border {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px dashed #8b6b4a;
+        z-index: -1;
+        pointer-events: none;
+    }
+</style>
+{% endblock %}
+
+{% block container_class %}registration-container{% endblock %}
+
+{% block additional_content_before %}
+<div class="grain-overlay"></div>
+  
+<div class="parallax-wrapper">
+    <div class="parallax-item retro-bg" data-speedx="0.005" data-speedy="0.005" data-speedz="0" data-rotation="0">
+        <img src="{{ theme_assets_path }}retro/retro_background.jpg" class="layer background" />
+    </div>
+    <div class="parallax-item retro-1" data-speedx="-0.03" data-speedy="0.02" data-speedz="0.5" data-rotation="0.8">
+        <img src="{{ theme_assets_path }}retro/retro_elements (1).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-2" data-speedx="0.04" data-speedy="-0.02" data-speedz="1" data-rotation="-0.5">
+        <img src="{{ theme_assets_path }}retro/retro_elements (2).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-3" data-speedx="-0.02" data-speedy="0.04" data-speedz="1.5" data-rotation="1">
+        <img src="{{ theme_assets_path }}retro/retro_elements (3).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-4" data-speedx="0.05" data-speedy="0.01" data-speedz="0.8" data-rotation="-0.7">
+        <img src="{{ theme_assets_path }}retro/retro_elements (4).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-5" data-speedx="-0.04" data-speedy="-0.03" data-speedz="1.2" data-rotation="0.6">
+        <img src="{{ theme_assets_path }}retro/retro_elements (5).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-6" data-speedx="0.03" data-speedy="0.05" data-speedz="0.7" data-rotation="-0.3">
+        <img src="{{ theme_assets_path }}retro/retro_elements (6).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-7" data-speedx="-0.05" data-speedy="-0.01" data-speedz="1.1" data-rotation="0.4">
+        <img src="{{ theme_assets_path }}retro/retro_elements (7).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-8" data-speedx="0.02" data-speedy="-0.04" data-speedz="0.9" data-rotation="-0.9">
+        <img src="{{ theme_assets_path }}retro/retro_elements (8).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-9" data-speedx="-0.01" data-speedy="0.03" data-speedz="1.3" data-rotation="0.2">
+        <img src="{{ theme_assets_path }}retro/retro_elements (9).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-10" data-speedx="0.03" data-speedy="-0.02" data-speedz="1.2" data-rotation="0.3">
+        <img src="{{ theme_assets_path }}retro/retro_elements (10).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-11" data-speedx="-0.04" data-speedy="0.03" data-speedz="0.8" data-rotation="-0.5">
+        <img src="{{ theme_assets_path }}retro/retro_elements (11).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-12" data-speedx="0.02" data-speedy="-0.05" data-speedz="1.3" data-rotation="0.7">
+        <img src="{{ theme_assets_path }}retro/retro_elements (12).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-13" data-speedx="-0.03" data-speedy="0.01" data-speedz="0.6" data-rotation="-0.4">
+        <img src="{{ theme_assets_path }}retro/retro_elements (13).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-14" data-speedx="0.05" data-speedy="-0.03" data-speedz="1.0" data-rotation="0.6">
+        <img src="{{ theme_assets_path }}retro/retro_elements (14).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-15" data-speedx="-0.02" data-speedy="0.04" data-speedz="0.9" data-rotation="-0.8">
+        <img src="{{ theme_assets_path }}retro/retro_elements (15).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-16" data-speedx="0.04" data-speedy="-0.01" data-speedz="1.4" data-rotation="0.5">
+        <img src="{{ theme_assets_path }}retro/retro_elements (16).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-17" data-speedx="-0.05" data-speedy="0.02" data-speedz="0.7" data-rotation="-0.6">
+        <img src="{{ theme_assets_path }}retro/retro_elements (17).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-18" data-speedx="0.01" data-speedy="-0.04" data-speedz="1.1" data-rotation="0.4">
+        <img src="{{ theme_assets_path }}retro/retro_elements (18).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-19" data-speedx="-0.06" data-speedy="0.05" data-speedz="0.8" data-rotation="-0.3">
+        <img src="{{ theme_assets_path }}retro/retro_elements (19).png" class="layer" />
+    </div>
+    <div class="parallax-item retro-20" data-speedx="0.03" data-speedy="-0.02" data-speedz="1.2" data-rotation="0.7">
+        <img src="{{ theme_assets_path }}retro/retro_elements (20).png" class="layer" />
+    </div>
+</div>
+{% endblock %}
+
+{% block header_section %}
+<div class="decorative-border"></div>
+<div class="retro-stamp">Limited!</div>
+<h1>{{ event.name }}</h1>
+<p class="lead">Register now for this exclusive retro-themed experience!</p>
+{% endblock %}
+
+{% block additional_scripts %}
+<script>
+    // Parallax effect
+    const parallaxItems = document.querySelectorAll('.parallax-item');
+    document.addEventListener('mousemove', e => {
+        let xValue = e.clientX - window.innerWidth / 2;
+        let yValue = e.clientY - window.innerHeight / 2;
+
+        parallaxItems.forEach(el => {
+            let speedx = parseFloat(el.dataset.speedx);
+            let speedy = parseFloat(el.dataset.speedy);
+            let speedz = parseFloat(el.dataset.speedz);
+            let rotation = parseFloat(el.dataset.rotation);
+
+            // Add a more vintage feel to the movement - slightly jerky
+            let jerkFactor = Math.sin(Date.now() / 3000) * 2;
+            
+            let isInLeft = parseFloat(getComputedStyle(el).left) < window.innerWidth / 2 ? 1 : -1;
+            let zValue = (e.clientX - parseFloat(getComputedStyle(el).left)) * isInLeft * 0.1;
+
+            el.style.transform = `
+                perspective(1500px)
+                translateZ(${zValue * speedz}px)
+                rotateY(${(xValue * rotation * 0.01) + (jerkFactor * rotation * 0.2)}deg)
+                translateX(calc(-50% + ${-xValue * speedx}px))
+                translateY(calc(-50% + ${-yValue * speedy}px))
+            `;
+        });
+    });
+
+    // Add aged effect with random "scratches" for film reel look
+    function addRandomScratches() {
+        const scratch = document.createElement('div');
+        const randomLeft = Math.random() * 100;
+        const randomWidth = Math.random() * 3 + 1;
+        const randomDuration = Math.random() * 400 + 100;
+        
+        scratch.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: ${randomLeft}%;
+            width: ${randomWidth}px;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.5);
+            z-index: 101;
+            pointer-events: none;
+        `;
+        
+        document.body.appendChild(scratch);
+        
+        setTimeout(() => {
+            document.body.removeChild(scratch);
+        }, randomDuration);
+        
+        setTimeout(addRandomScratches, Math.random() * 5000 + 3000);
+    }
+    
+    // Start the scratch effect
+    setTimeout(addRandomScratches, 2000);
+</script>
+{% endblock %}

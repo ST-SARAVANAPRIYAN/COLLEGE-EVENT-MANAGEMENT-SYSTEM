@@ -1,0 +1,383 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}CEMS - Notifications{% endblock %}
+
+{% block page_title %}Send Notifications{% endblock %}
+
+{% block extra_styles %}
+.notification-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    background-color: white;
+    transition: transform 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.notification-card:hover {
+    transform: translateY(-5px);
+}
+
+.notification-form {
+    padding: 20px;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.notification-history {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: #f8f9fa;
+    transition: transform 0.2s ease;
+}
+
+.notification-item:hover {
+    transform: translateX(5px);
+    background-color: #e9ecef;
+}
+
+.recipient-badge {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.recipient-all {
+    background-color: #e9f5ff;
+    color: #3e64ff;
+}
+
+.recipient-event {
+    background-color: #fff4e6;
+    color: #fd7e14;
+}
+
+.timestamp {
+    font-size: 12px;
+    color: #6c757d;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="notification-form">
+                <h4 class="mb-4">Send New Notification</h4>
+                <form id="notificationForm">
+                    <div class="mb-3">
+                        <label for="notificationMessage" class="form-label">Message*</label>
+                        <textarea class="form-control" id="notificationMessage" rows="4" placeholder="Enter your notification message..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Target Audience*</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="audience" id="audienceAll" value="all" checked>
+                            <label class="form-check-label" for="audienceAll">
+                                All Participants
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="audience" id="audienceEvent" value="event">
+                            <label class="form-check-label" for="audienceEvent">
+                                Specific Event Participants
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="eventSelectorContainer" style="display: none;">
+                        <label for="eventSelector" class="form-label">Select Event*</label>
+                        <select class="form-select" id="eventSelector">
+                            <option value="">Loading events...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="sendEmail" checked>
+                            <label class="form-check-label" for="sendEmail">
+                                Also send as email
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i> Send Notification
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-7">
+            <div class="notification-card">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="m-0">Notification History</h4>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-primary active" id="showAllBtn">All</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="showAllParticipantsBtn">All Participants</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="showEventSpecificBtn">Event Specific</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body notification-history" id="notificationsHistory">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading notification history...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="notification-stats row mt-4">
+                <div class="col-md-4">
+                    <div class="notification-card p-3 text-center">
+                        <h3 class="mb-0" id="totalNotifications">-</h3>
+                        <p class="text-muted mb-0">Total Notifications</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="notification-card p-3 text-center">
+                        <h3 class="mb-0" id="totalBroadcasts">-</h3>
+                        <p class="text-muted mb-0">Broadcasts</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="notification-card p-3 text-center">
+                        <h3 class="mb-0" id="totalTargeted">-</h3>
+                        <p class="text-muted mb-0">Event Targeted</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load organiser events for dropdown
+        loadEvents();
+        
+        // Load notification history
+        loadNotifications();
+        
+        // Toggle event selector based on audience selection
+        document.querySelectorAll('input[name="audience"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('eventSelectorContainer').style.display = 
+                    this.value === 'event' ? 'block' : 'none';
+            });
+        });
+        
+        // Filter buttons
+        document.getElementById('showAllBtn').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('showAllParticipantsBtn').classList.remove('active');
+            document.getElementById('showEventSpecificBtn').classList.remove('active');
+            filterNotifications('all');
+        });
+        
+        document.getElementById('showAllParticipantsBtn').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('showAllBtn').classList.remove('active');
+            document.getElementById('showEventSpecificBtn').classList.remove('active');
+            filterNotifications('broadcast');
+        });
+        
+        document.getElementById('showEventSpecificBtn').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('showAllBtn').classList.remove('active');
+            document.getElementById('showAllParticipantsBtn').classList.remove('active');
+            filterNotifications('targeted');
+        });
+        
+        // Handle form submission
+        document.getElementById('notificationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const message = document.getElementById('notificationMessage').value.trim();
+            const audience = document.querySelector('input[name="audience"]:checked').value;
+            const eventId = audience === 'event' ? document.getElementById('eventSelector').value : null;
+            const sendEmail = document.getElementById('sendEmail').checked;
+            
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            if (audience === 'event' && !eventId) {
+                alert('Please select an event');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+            
+            try {
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        event_id: eventId,
+                        send_email: sendEmail
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to send notification');
+                }
+                
+                // Show success message
+                alert('Notification sent successfully!');
+                document.getElementById('notificationMessage').value = '';
+                
+                // Reload notification history
+                loadNotifications();
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error('Error sending notification:', error);
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    });
+    
+    // Store all notifications for filtering
+    let allNotifications = [];
+    
+    // Load organiser events for dropdown
+    async function loadEvents() {
+        try {
+            const response = await fetch('/api/organiser/events');
+            const data = await response.json();
+            
+            const eventSelector = document.getElementById('eventSelector');
+            
+            if (data.success && data.events && data.events.length > 0) {
+                eventSelector.innerHTML = '<option value="">Select an event...</option>';
+                
+                data.events.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event.id;
+                    option.textContent = event.name;
+                    eventSelector.appendChild(option);
+                });
+            } else {
+                eventSelector.innerHTML = '<option value="">No events available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading events:', error);
+            document.getElementById('eventSelector').innerHTML = 
+                '<option value="">Error loading events</option>';
+        }
+    }
+    
+    // Load notification history
+    async function loadNotifications() {
+        try {
+            const response = await fetch('/api/organiser/notifications');
+            const data = await response.json();
+            
+            if (data.success && data.notifications) {
+                allNotifications = data.notifications;
+                displayNotifications(allNotifications);
+                updateStats(allNotifications);
+            } else {
+                document.getElementById('notificationsHistory').innerHTML = 
+                    '<div class="alert alert-info">No notifications sent yet.</div>';
+                updateStats([]);
+            }
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            document.getElementById('notificationsHistory').innerHTML = 
+                '<div class="alert alert-warning">Failed to load notifications. Please refresh the page.</div>';
+        }
+    }
+    
+    // Display notifications in the UI
+    function displayNotifications(notifications) {
+        const container = document.getElementById('notificationsHistory');
+        
+        if (notifications.length === 0) {
+            container.innerHTML = '<div class="alert alert-info">No notifications found.</div>';
+            return;
+        }
+        
+        let html = '';
+        notifications.forEach(notification => {
+            const isEvent = notification.event_id !== null;
+            const recipientClass = isEvent ? 'recipient-event' : 'recipient-all';
+            const recipientText = notification.recipient_name ? 
+                notification.recipient_name : 
+                isEvent ? 'Event Participants' : 'All Participants';
+            
+            html += `
+            <div class="notification-item">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="recipient-badge ${recipientClass}">${recipientText}</span>
+                    <span class="timestamp">${notification.created_at}</span>
+                </div>
+                <p class="mb-1">${notification.message}</p>
+                ${notification.event_name ? 
+                  `<div class="text-muted"><small>Event: ${notification.event_name}</small></div>` : ''}
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // Filter notifications
+    function filterNotifications(type) {
+        let filtered;
+        
+        switch(type) {
+            case 'broadcast':
+                filtered = allNotifications.filter(n => n.user_id === null && n.event_id === null);
+                break;
+            case 'targeted':
+                filtered = allNotifications.filter(n => n.event_id !== null);
+                break;
+            case 'all':
+            default:
+                filtered = allNotifications;
+                break;
+        }
+        
+        displayNotifications(filtered);
+    }
+    
+    // Update notification stats
+    function updateStats(notifications) {
+        const totalCount = notifications.length;
+        const broadcastCount = notifications.filter(n => n.user_id === null && n.event_id === null).length;
+        const targetedCount = notifications.filter(n => n.event_id !== null).length;
+        
+        document.getElementById('totalNotifications').textContent = totalCount;
+        document.getElementById('totalBroadcasts').textContent = broadcastCount;
+        document.getElementById('totalTargeted').textContent = targetedCount;
+    }
+</script>
+{% endblock %}

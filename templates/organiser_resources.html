@@ -1,0 +1,526 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}CEMS - Resource Management{% endblock %}
+
+{% block page_title %}Resource Management{% endblock %}
+
+{% block extra_styles %}
+.resource-card {
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    background-color: white;
+    transition: transform 0.3s ease;
+}
+
+.resource-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.resource-type-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.resource-type-equipment {
+    background-color: #e3f2fd;
+    color: #0d6efd;
+}
+
+.resource-type-venue {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.resource-type-personnel {
+    background-color: #fff8e1;
+    color: #f57f17;
+}
+
+.resource-quantity {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.resource-quantity .available {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.resource-quantity .allocated {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+#resourceModal .form-group {
+    margin-bottom: 15px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5>Manage Resources</h5>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#resourceModal">
+                    <i class="fas fa-plus-circle me-2"></i> Add New Resource
+                </button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group">
+                <input type="text" id="resourceSearch" class="form-control" placeholder="Search resources...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div id="resourceList" class="resource-list">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading resources...</span>
+                    </div>
+                    <p class="mt-2">Loading resources...</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card custom-card">
+                <div class="card-title">
+                    <h5>Resource Allocations</h5>
+                </div>
+                <div class="card-body" id="allocationsList">
+                    <div class="text-center py-3">
+                        <p class="text-muted">Select a resource to see allocations</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card custom-card mt-4">
+                <div class="card-title">
+                    <h5>Resource Usage</h5>
+                </div>
+                <div class="card-body p-0">
+                    <canvas id="resourceUsageChart" style="width: 100%; height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Resource Modal -->
+<div class="modal fade" id="resourceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resourceModalLabel">Add New Resource</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="resourceForm">
+                    <div class="form-group">
+                        <label for="resourceName">Resource Name*</label>
+                        <input type="text" class="form-control" id="resourceName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceType">Resource Type*</label>
+                        <select class="form-select" id="resourceType" required>
+                            <option value="">Select type</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="venue">Venue</option>
+                            <option value="personnel">Personnel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="totalQuantity">Total Quantity*</label>
+                        <input type="number" class="form-control" id="totalQuantity" min="1" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceDescription">Description</label>
+                        <textarea class="form-control" id="resourceDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveResource">Save Resource</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Global variables
+    let resources = [];
+    let resourceUsageChart = null;
+    let selectedResourceId = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async function() {
+        await loadResources();
+        initializeResourceChart();
+        
+        // Set up event listeners
+        document.getElementById('saveResource').addEventListener('click', saveResource);
+        document.getElementById('resourceSearch').addEventListener('input', filterResources);
+    });
+    
+    // Load resources
+    async function loadResources() {
+        try {
+            const response = await fetch('/api/resources');
+            resources = await response.json();
+            renderResourcesList(resources);
+        } catch (error) {
+            console.error('Error loading resources:', error);
+            document.getElementById('resourceList').innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load resources. Please try again later.
+                </div>
+            `;
+        }
+    }
+    
+    // Render resources list
+    function renderResourcesList(resourcesList) {
+        const container = document.getElementById('resourceList');
+        
+        if (resourcesList.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <p>No resources found. Add your first resource to get started.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        resourcesList.forEach(resource => {
+            // Determine resource type class
+            let typeClass = 'resource-type-equipment';
+            if (resource.resource_type === 'venue') typeClass = 'resource-type-venue';
+            if (resource.resource_type === 'personnel') typeClass = 'resource-type-personnel';
+            
+            // Calculate allocation percentage
+            const allocated = resource.total_quantity - resource.available_quantity;
+            const allocationPercentage = Math.round((allocated / resource.total_quantity) * 100);
+            
+            html += `
+                <div class="resource-card" data-resource-id="${resource.id}">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <span class="resource-type-badge ${typeClass}">
+                                ${resource.resource_type.charAt(0).toUpperCase() + resource.resource_type.slice(1)}
+                            </span>
+                            <h5>${resource.name}</h5>
+                            <p class="resource-quantity">
+                                <span class="available">${resource.available_quantity}</span> available / 
+                                <span class="allocated">${allocated}</span> allocated
+                                out of ${resource.total_quantity} total
+                            </p>
+                            <p class="text-muted small">${resource.description || 'No description'}</p>
+                        </div>
+                        <div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="editResource(${resource.id})">Edit</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="deleteResource(${resource.id})">Delete</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${allocationPercentage}%;" 
+                             aria-valuenow="${allocationPercentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // Add click listener to show allocations
+        document.querySelectorAll('.resource-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const resourceId = this.dataset.resourceId;
+                selectedResourceId = resourceId;
+                showResourceAllocations(resourceId);
+                
+                // Mark as selected
+                document.querySelectorAll('.resource-card').forEach(c => c.classList.remove('border-primary'));
+                this.classList.add('border-primary');
+            });
+        });
+    }
+    
+    // Save new resource
+    async function saveResource() {
+        const name = document.getElementById('resourceName').value;
+        const resourceType = document.getElementById('resourceType').value;
+        const totalQuantity = parseInt(document.getElementById('totalQuantity').value);
+        const description = document.getElementById('resourceDescription').value;
+        
+        if (!name || !resourceType || isNaN(totalQuantity) || totalQuantity < 1) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/resources', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name,
+                    resource_type: resourceType,
+                    total_quantity: totalQuantity,
+                    description
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('resourceModal')).hide();
+                
+                // Reset form
+                document.getElementById('resourceForm').reset();
+                
+                // Reload resources
+                await loadResources();
+                
+                // Show success message
+                alert('Resource created successfully!');
+            } else {
+                alert(`Error: ${result.error || 'Could not create resource'}`);
+            }
+        } catch (error) {
+            console.error('Error saving resource:', error);
+            alert('Failed to save resource. Please try again.');
+        }
+    }
+    
+    // Show resource allocations
+    async function showResourceAllocations(resourceId) {
+        try {
+            const response = await fetch(`/api/resources/${resourceId}/allocations`);
+            const allocations = await response.json();
+            
+            const container = document.getElementById('allocationsList');
+            
+            if (allocations.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-3">
+                        <p class="text-muted">No allocations for this resource</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            allocations.forEach(allocation => {
+                const startDate = new Date(allocation.allocation_start);
+                const endDate = new Date(allocation.allocation_end);
+                
+                html += `
+                    <div class="allocation-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <h6>${allocation.event_name}</h6>
+                            <span class="badge ${allocation.status === 'allocated' ? 'bg-warning' : 'bg-success'}">
+                                ${allocation.status}
+                            </span>
+                        </div>
+                        <p class="small mb-1">
+                            <i class="far fa-calendar"></i> 
+                            ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}
+                        </p>
+                        <p class="small mb-0">
+                            <i class="fas fa-hashtag"></i> 
+                            Quantity: ${allocation.quantity}
+                        </p>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading allocations:', error);
+            document.getElementById('allocationsList').innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load allocations. Please try again.
+                </div>
+            `;
+        }
+    }
+    
+    // Filter resources by search term
+    function filterResources() {
+        const searchTerm = document.getElementById('resourceSearch').value.toLowerCase();
+        
+        if (!searchTerm) {
+            renderResourcesList(resources);
+            return;
+        }
+        
+        const filteredResources = resources.filter(resource => 
+            resource.name.toLowerCase().includes(searchTerm) ||
+            resource.description?.toLowerCase().includes(searchTerm) ||
+            resource.resource_type.toLowerCase().includes(searchTerm)
+        );
+        
+        renderResourcesList(filteredResources);
+    }
+    
+    // Edit resource
+    async function editResource(resourceId) {
+        const resource = resources.find(r => r.id === resourceId);
+        if (!resource) return;
+        
+        // Populate form
+        document.getElementById('resourceName').value = resource.name;
+        document.getElementById('resourceType').value = resource.resource_type;
+        document.getElementById('totalQuantity').value = resource.total_quantity;
+        document.getElementById('resourceDescription').value = resource.description || '';
+        
+        // Update modal title
+        document.getElementById('resourceModalLabel').textContent = 'Edit Resource';
+        
+        // Update save button handler
+        const saveButton = document.getElementById('saveResource');
+        saveButton.removeEventListener('click', saveResource);
+        saveButton.addEventListener('click', () => updateResource(resourceId));
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('resourceModal'));
+        modal.show();
+    }
+    
+    // Update resource
+    async function updateResource(resourceId) {
+        // Similar to saveResource but using PUT request
+        const name = document.getElementById('resourceName').value;
+        const resourceType = document.getElementById('resourceType').value;
+        const totalQuantity = parseInt(document.getElementById('totalQuantity').value);
+        const description = document.getElementById('resourceDescription').value;
+        
+        if (!name || !resourceType || isNaN(totalQuantity) || totalQuantity < 1) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/resources/${resourceId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name,
+                    resource_type: resourceType,
+                    total_quantity: totalQuantity,
+                    description
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('resourceModal')).hide();
+                
+                // Reset form and title
+                document.getElementById('resourceForm').reset();
+                document.getElementById('resourceModalLabel').textContent = 'Add New Resource';
+                
+                // Reset save button handler
+                const saveButton = document.getElementById('saveResource');
+                saveButton.removeEventListener('click', () => updateResource(resourceId));
+                saveButton.addEventListener('click', saveResource);
+                
+                // Reload resources
+                await loadResources();
+                
+                // Show success message
+                alert('Resource updated successfully!');
+            } else {
+                alert(`Error: ${result.error || 'Could not update resource'}`);
+            }
+        } catch (error) {
+            console.error('Error updating resource:', error);
+            alert('Failed to update resource. Please try again.');
+        }
+    }
+    
+    // Delete resource
+    async function deleteResource(resourceId) {
+        if (!confirm('Are you sure you want to delete this resource?')) return;
+        
+        try {
+            const response = await fetch(`/api/resources/${resourceId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                // Reload resources
+                await loadResources();
+                
+                // Show success message
+                alert('Resource deleted successfully!');
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.error || 'Could not delete resource'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting resource:', error);
+            alert('Failed to delete resource. Please try again.');
+        }
+    }
+    
+    // Initialize resource usage chart
+    function initializeResourceChart() {
+        const ctx = document.getElementById('resourceUsageChart');
+        if(ctx) {
+            resourceUsageChart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Available', 'Allocated'],
+                    datasets: [{
+                        data: [100, 0], // Default placeholder data
+                        backgroundColor: ['#28a745', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Resource Allocation'
+                        }
+                    }
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

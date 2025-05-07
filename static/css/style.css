@@ -8,7 +8,7 @@ body {
 
 /* Header and Navigation */
 header {
-    background: linear-gradient(135deg, #232946 0%, #4a4e69 100%);
+    background: linear-gradient(135deg, #1a5276 0%, #27ae60 100%);
     color: #fff;
 }
 
@@ -151,11 +151,11 @@ header {
 }
 
 .technical-header {
-    background: linear-gradient(135deg, #3e64ff, #5a20cb) !important;
+    background: linear-gradient(135deg, #2980b9, #16a085) !important;
 }
 
 .non-technical-header {
-    background: linear-gradient(135deg, #ff9a3c, #ff6a88) !important;
+    background: linear-gradient(135deg, #3498db, #2ecc71) !important;
 }
 
 /* Dashboard Specific Styles */
@@ -346,13 +346,13 @@ footer {
     justify-content: center;
     font-size: 2rem;
     font-weight: bold;
-    background: linear-gradient(120deg, #eebbc3 40%, #232946 100%);
+    background: linear-gradient(120deg, #3498db 40%, #2ecc71 100%);
     color: #fff;
 }
 
 .event-card.nontech .event-gradient {
-    background: linear-gradient(120deg, #ffe066 40%, #ff6f61 100%);
-    color: #232946;
+    background: linear-gradient(120deg, #1abc9c 40%, #3498db 100%);
+    color: #fff;
 }
 
 .event-content {
@@ -383,8 +383,8 @@ footer {
 }
 
 .event-tag {
-    background: #eebbc3;
-    color: #232946;
+    background: #2ecc71;
+    color: #fff;
     border-radius: 0.5rem;
     padding: 0.2rem 0.7rem;
     font-size: 0.9rem;
@@ -392,11 +392,244 @@ footer {
 }
 
 .event-card.tech .event-tag {
-    background: #fff;
-    color: #232946;
+    background: #3498db;
+    color: #fff;
 }
 
 .event-card.nontech .event-tag {
-    background: #fff;
-    color: #ff6f61;
+    background: #1abc9c;
+    color: #fff;
+}
+
+/* Updated Event Cards for Events Page */
+.events-container {
+    padding: 2rem 0;
+}
+
+.modern-event-card {
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    position: relative;
+}
+
+.modern-event-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.modern-event-card .card-img-container {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.modern-event-card .card-img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.modern-event-card:hover .card-img-container img {
+    transform: scale(1.1);
+}
+
+.modern-event-card .event-date-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
+    border-radius: 20px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #232946;
+    display: flex;
+    align-items: center;
+}
+
+.modern-event-card .event-date-badge i {
+    margin-right: 5px;
+    color: #eebbc3;
+}
+
+.modern-event-card .event-status {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.modern-event-card .status-open {
+    background: #4CAF50;
+    color: white;
+}
+
+.modern-event-card .status-closing {
+    background: #FF9800;
+    color: white;
+}
+
+.modern-event-card .status-closed {
+    background: #F44336;
+    color: white;
+}
+
+.modern-event-card .status-soldout {
+    background: #795548;
+    color: white;
+}
+
+.modern-event-card .card-content {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.modern-event-card .card-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #232946;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.modern-event-card .card-category {
+    display: inline-block;
+    background: #f0f0f0;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+
+.modern-event-card .card-info {
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.modern-event-card .card-info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.modern-event-card .card-info-item i {
+    width: 20px;
+    margin-right: 8px;
+    color: #232946;
+}
+
+.modern-event-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.modern-event-card .price-tag {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #232946;
+}
+
+.modern-event-card .free-tag {
+    background: #4CAF50;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Event Modal Animation */
+.event-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.event-modal.show {
+    display: block;
+    opacity: 1;
+}
+
+.event-modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transform: translateY(30px);
+    opacity: 0;
+    transition: all 0.4s ease;
+    overflow: hidden;
+}
+
+.event-modal.show .event-modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.event-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-modal-header h2 {
+    margin: 0;
+    color: #232946;
+}
+
+.event-modal-close {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.event-modal-close:hover {
+    color: #232946;
+}
+
+.event-modal-body {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.event-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
 }

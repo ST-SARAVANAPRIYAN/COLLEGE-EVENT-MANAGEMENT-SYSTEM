@@ -1,0 +1,875 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}CEMS - Reports{% endblock %}
+
+{% block page_title %}Reports & Analytics{% endblock %}
+
+{% block extra_styles %}
+.report-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    background-color: white;
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+    overflow: hidden;
+}
+
+.report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.report-card .card-header {
+    background-color: white;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 15px 20px;
+}
+
+.report-card .card-body {
+    padding: 20px;
+}
+
+.chart-container {
+    height: 300px;
+    position: relative;
+}
+
+.stat-item {
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-3px);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 20px;
+    color: white;
+}
+
+.bg-gradient-blue {
+    background: linear-gradient(45deg, #3e64ff, #5edfff);
+}
+
+.bg-gradient-green {
+    background: linear-gradient(45deg, #2dce89, #4fd69c);
+}
+
+.bg-gradient-orange {
+    background: linear-gradient(45deg, #fb6340, #fbb140);
+}
+
+.bg-gradient-purple {
+    background: linear-gradient(45deg, #8965e0, #b8a2e3);
+}
+
+.report-filter {
+    background-color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.date-range {
+    display: flex;
+    gap: 10px;
+}
+
+.export-icon {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.export-icon:hover {
+    transform: translateY(-2px);
+    color: var(--primary-color);
+}
+
+.report-table th, .report-table td {
+    vertical-align: middle;
+}
+
+.summary-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.summary-card h5 {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Filters Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="report-filter">
+                <form id="reportFilters" class="row align-items-end">
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <label for="eventSelector" class="form-label">Select Event</label>
+                        <select class="form-select" id="eventSelector">
+                            <option value="all" selected>All Events</option>
+                            <option value="loading">Loading events...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5 mb-3 mb-md-0">
+                        <label class="form-label">Date Range</label>
+                        <div class="date-range">
+                            <input type="date" class="form-control" id="startDate">
+                            <span class="align-self-center">to</span>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3 mb-md-0">
+                        <label for="reportType" class="form-label">Report Type</label>
+                        <select class="form-select" id="reportType">
+                            <option value="summary" selected>Summary</option>
+                            <option value="detailed">Detailed</option>
+                            <option value="financial">Financial</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-2"></i> Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Summary -->
+    <div class="row" id="statsSummary">
+        <div class="col-md-3">
+            <div class="stat-item bg-light">
+                <div class="stat-icon bg-gradient-blue">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0" id="totalEvents">-</h3>
+                    <div class="text-muted">Events</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-item bg-light">
+                <div class="stat-icon bg-gradient-green">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0" id="totalRegistrations">-</h3>
+                    <div class="text-muted">Registrations</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-item bg-light">
+                <div class="stat-icon bg-gradient-orange">
+                    <i class="fas fa-rupee-sign"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0" id="totalRevenue">-</h3>
+                    <div class="text-muted">Revenue</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-item bg-light">
+                <div class="stat-icon bg-gradient-purple">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0" id="avgOccupancy">-</h3>
+                    <div class="text-muted">Avg. Occupancy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="row">
+        <!-- Registrations Trend -->
+        <div class="col-lg-7">
+            <div class="report-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Registration Trends</h5>
+                        <div>
+                            <i class="fas fa-download export-icon" title="Export as PNG" id="exportRegistrationChart"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="registrationTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Event Distribution -->
+        <div class="col-lg-5">
+            <div class="report-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Event Type Distribution</h5>
+                        <div>
+                            <i class="fas fa-download export-icon" title="Export as PNG" id="exportDistributionChart"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="eventDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Content -->
+    <div class="row mt-4">
+        <div class="col-12" id="reportContent">
+            <!-- Report will be loaded here -->
+            <div class="report-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0" id="reportTitle">Event Summary Report</h5>
+                        <div>
+                            <i class="fas fa-download export-icon me-2" title="Export as PDF" id="exportReportPDF"></i>
+                            <i class="fas fa-file-excel export-icon" title="Export as Excel" id="exportReportExcel"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body" id="reportBody">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Generating report...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+    let registrationTrendChart, eventDistributionChart;
+    let reportData = {};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date inputs with current month range
+        initializeDateRange();
+        
+        // Load events for selector
+        loadEvents();
+        
+        // Initialize charts
+        initializeCharts();
+        
+        // Handle report filter form submission
+        document.getElementById('reportFilters').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateReport();
+        });
+        
+        // Handle chart exports
+        document.getElementById('exportRegistrationChart').addEventListener('click', function() {
+            exportChart('registrationTrendChart', 'registration_trend');
+        });
+        
+        document.getElementById('exportDistributionChart').addEventListener('click', function() {
+            exportChart('eventDistributionChart', 'event_distribution');
+        });
+        
+        // Handle report exports
+        document.getElementById('exportReportPDF').addEventListener('click', function() {
+            exportReportPDF();
+        });
+        
+        document.getElementById('exportReportExcel').addEventListener('click', function() {
+            exportReportExcel();
+        });
+        
+        // Generate initial report
+        generateReport();
+    });
+    
+    function initializeDateRange() {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
+        document.getElementById('startDate').valueAsDate = firstDay;
+        document.getElementById('endDate').valueAsDate = lastDay;
+    }
+    
+    async function loadEvents() {
+        try {
+            const response = await fetch('/api/organiser/events');
+            const data = await response.json();
+            
+            const eventSelector = document.getElementById('eventSelector');
+            
+            if (data.success && data.events && data.events.length > 0) {
+                // Keep the "All Events" option and clear the loading option
+                eventSelector.innerHTML = '<option value="all" selected>All Events</option>';
+                
+                data.events.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event.id;
+                    option.textContent = event.name;
+                    eventSelector.appendChild(option);
+                });
+            } else {
+                eventSelector.innerHTML = '<option value="all">All Events</option><option value="" disabled>No events available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading events:', error);
+            const eventSelector = document.getElementById('eventSelector');
+            eventSelector.innerHTML = '<option value="all">All Events</option><option value="" disabled>Error loading events</option>';
+        }
+    }
+    
+    function initializeCharts() {
+        // Registration Trend Chart
+        const trendCtx = document.getElementById('registrationTrendChart').getContext('2d');
+        registrationTrendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Registrations',
+                    data: [],
+                    borderColor: '#3e64ff',
+                    backgroundColor: 'rgba(62, 100, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Registration Trend'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Registrations'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Event Distribution Chart
+        const distributionCtx = document.getElementById('eventDistributionChart').getContext('2d');
+        eventDistributionChart = new Chart(distributionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Technical', 'Non-Technical', 'Workshop', 'Cultural'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: [
+                        '#3e64ff', 
+                        '#fb6340', 
+                        '#2dce89', 
+                        '#8965e0'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Event Type Distribution'
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    async function generateReport() {
+        // Show loading
+        document.getElementById('reportBody').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Generating report...</p>
+            </div>
+        `;
+        
+        // Get filter values
+        const eventId = document.getElementById('eventSelector').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const reportType = document.getElementById('reportType').value;
+        
+        // Update report title
+        const reportTitle = document.getElementById('reportTitle');
+        reportTitle.textContent = `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`;
+        
+        try {
+            // In a real implementation, you would fetch data from backend
+            // For now, we'll create some mock data
+            reportData = await fetchReportData(eventId, startDate, endDate, reportType);
+            
+            // Update stats summary
+            updateStatsSummary(reportData);
+            
+            // Update charts
+            updateCharts(reportData);
+            
+            // Update report content
+            updateReportContent(reportData, reportType);
+            
+        } catch (error) {
+            console.error('Error generating report:', error);
+            document.getElementById('reportBody').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Failed to generate report. Please try again later.
+                </div>
+            `;
+        }
+    }
+    
+    // This is a mock function - in a real app, you'd fetch data from backend
+    async function fetchReportData(eventId, startDate, endDate, reportType) {
+        // Simulate API call
+        return new Promise(resolve => {
+            setTimeout(() => {
+                // Mock data - in a real application, this would come from the server
+                const mockData = {
+                    summary: {
+                        totalEvents: 8,
+                        totalRegistrations: 256,
+                        totalRevenue: 25600,
+                        avgOccupancy: 78
+                    },
+                    registrationTrend: {
+                        labels: ['Jan 1', 'Jan 8', 'Jan 15', 'Jan 22', 'Jan 29', 'Feb 5'],
+                        data: [12, 19, 15, 25, 30, 35]
+                    },
+                    eventDistribution: {
+                        labels: ['Technical', 'Non-Technical', 'Workshop', 'Cultural'],
+                        data: [4, 2, 1, 1]
+                    },
+                    events: [
+                        {
+                            id: 1,
+                            name: 'Coding Competition',
+                            type: 'Technical',
+                            date: '2025-01-15',
+                            registrations: 45,
+                            capacity: 50,
+                            revenue: 4500,
+                            occupancyRate: 90
+                        },
+                        {
+                            id: 2,
+                            name: 'Design Workshop',
+                            type: 'Workshop',
+                            date: '2025-01-20',
+                            registrations: 35,
+                            capacity: 40,
+                            revenue: 7000,
+                            occupancyRate: 87.5
+                        },
+                        {
+                            id: 3,
+                            name: 'Cultural Night',
+                            type: 'Cultural',
+                            date: '2025-01-25',
+                            registrations: 120,
+                            capacity: 150,
+                            revenue: 6000,
+                            occupancyRate: 80
+                        },
+                        {
+                            id: 4,
+                            name: 'Technical Quiz',
+                            type: 'Technical',
+                            date: '2025-01-30',
+                            registrations: 56,
+                            capacity: 60,
+                            revenue: 8400,
+                            occupancyRate: 93.3
+                        }
+                    ]
+                };
+                resolve(mockData);
+            }, 800); // Simulate delay
+        });
+    }
+    
+    function updateStatsSummary(data) {
+        document.getElementById('totalEvents').textContent = data.summary.totalEvents;
+        document.getElementById('totalRegistrations').textContent = data.summary.totalRegistrations;
+        document.getElementById('totalRevenue').textContent = '₹' + data.summary.totalRevenue;
+        document.getElementById('avgOccupancy').textContent = data.summary.avgOccupancy + '%';
+    }
+    
+    function updateCharts(data) {
+        // Update registration trend chart
+        registrationTrendChart.data.labels = data.registrationTrend.labels;
+        registrationTrendChart.data.datasets[0].data = data.registrationTrend.data;
+        registrationTrendChart.update();
+        
+        // Update event distribution chart
+        eventDistributionChart.data.labels = data.eventDistribution.labels;
+        eventDistributionChart.data.datasets[0].data = data.eventDistribution.data;
+        eventDistributionChart.update();
+    }
+    
+    function updateReportContent(data, reportType) {
+        const reportBody = document.getElementById('reportBody');
+        
+        if (reportType === 'summary') {
+            reportBody.innerHTML = generateSummaryReport(data);
+        } else if (reportType === 'detailed') {
+            reportBody.innerHTML = generateDetailedReport(data);
+        } else if (reportType === 'financial') {
+            reportBody.innerHTML = generateFinancialReport(data);
+        }
+    }
+    
+    function generateSummaryReport(data) {
+        return `
+            <div class="summary-card">
+                <h5>Overview</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Report Period:</strong> ${document.getElementById('startDate').value} to ${document.getElementById('endDate').value}</p>
+                        <p><strong>Total Events:</strong> ${data.summary.totalEvents}</p>
+                        <p><strong>Total Registrations:</strong> ${data.summary.totalRegistrations}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Average Occupancy Rate:</strong> ${data.summary.avgOccupancy}%</p>
+                        <p><strong>Total Revenue:</strong> ₹${data.summary.totalRevenue}</p>
+                        <p><strong>Most Popular Event:</strong> ${data.events[3].name} (${data.events[3].registrations} registrations)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h5>Recent Events</h5>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover report-table">
+                    <thead>
+                        <tr>
+                            <th>Event Name</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Registrations</th>
+                            <th>Capacity</th>
+                            <th>Occupancy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.events.map(event => `
+                            <tr>
+                                <td>${event.name}</td>
+                                <td><span class="badge bg-${event.type === 'Technical' ? 'primary' : event.type === 'Workshop' ? 'success' : event.type === 'Cultural' ? 'danger' : 'warning'}">${event.type}</span></td>
+                                <td>${event.date}</td>
+                                <td>${event.registrations}</td>
+                                <td>${event.capacity}</td>
+                                <td>
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar bg-${event.occupancyRate > 90 ? 'success' : event.occupancyRate > 70 ? 'info' : event.occupancyRate > 50 ? 'warning' : 'danger'}" role="progressbar" style="width: ${event.occupancyRate}%"></div>
+                                    </div>
+                                    <small>${event.occupancyRate}%</small>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    function generateDetailedReport(data) {
+        return `
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                This detailed report includes in-depth information about each event in the selected period.
+            </div>
+            
+            ${data.events.map(event => `
+                <div class="summary-card">
+                    <h5>${event.name} <span class="badge bg-${event.type === 'Technical' ? 'primary' : event.type === 'Workshop' ? 'success' : event.type === 'Cultural' ? 'danger' : 'warning'}">${event.type}</span></h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p><strong>Date:</strong> ${event.date}</p>
+                            <p><strong>Registrations:</strong> ${event.registrations}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Capacity:</strong> ${event.capacity}</p>
+                            <p><strong>Occupancy Rate:</strong> ${event.occupancyRate}%</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Revenue:</strong> ₹${event.revenue}</p>
+                            <p><strong>Avg. Registration Fee:</strong> ₹${Math.round(event.revenue / event.registrations)}</p>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3">Registration Breakdown</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="chart-${event.id}" height="150"></canvas>
+                            <script>
+                                setTimeout(() => {
+                                    const ctx = document.getElementById('chart-${event.id}').getContext('2d');
+                                    new Chart(ctx, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                                            datasets: [{
+                                                label: 'Registrations',
+                                                data: [
+                                                    ${Math.round(event.registrations * 0.2)}, 
+                                                    ${Math.round(event.registrations * 0.3)}, 
+                                                    ${Math.round(event.registrations * 0.4)}, 
+                                                    ${Math.round(event.registrations * 0.1)}
+                                                ],
+                                                backgroundColor: '#3e64ff'
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            plugins: {
+                                                legend: {
+                                                    display: false
+                                                }
+                                            },
+                                            scales: {
+                                                y: {
+                                                    beginAtZero: true
+                                                }
+                                            }
+                                        }
+                                    });
+                                }, 100);
+                            </script>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Category</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Early Bird Registrations</td>
+                                            <td>${Math.round(event.registrations * 0.3)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Regular Registrations</td>
+                                            <td>${Math.round(event.registrations * 0.6)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Late Registrations</td>
+                                            <td>${Math.round(event.registrations * 0.1)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>No-shows</td>
+                                            <td>${Math.round(event.registrations * 0.05)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        `;
+    }
+    
+    function generateFinancialReport(data) {
+        // Calculate total revenue and expenses
+        const totalRevenue = data.summary.totalRevenue;
+        const expenses = totalRevenue * 0.4; // Mock expenses as 40% of revenue
+        const profit = totalRevenue - expenses;
+        
+        return `
+            <div class="summary-card">
+                <h5>Financial Summary</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h3 class="text-success">₹${totalRevenue}</h3>
+                        <p class="text-muted">Total Revenue</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-danger">₹${expenses}</h3>
+                        <p class="text-muted">Total Expenses</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-primary">₹${profit}</h3>
+                        <p class="text-muted">Net Profit</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <canvas id="financeChart" height="250"></canvas>
+                    <script>
+                        setTimeout(() => {
+                            const ctx = document.getElementById('financeChart').getContext('2d');
+                            new Chart(ctx, {
+                                type: 'pie',
+                                data: {
+                                    labels: ['Revenue', 'Expenses', 'Profit'],
+                                    datasets: [{
+                                        data: [${totalRevenue}, ${expenses}, ${profit}],
+                                        backgroundColor: ['#2dce89', '#f5365c', '#3e64ff'],
+                                        borderColor: 'white',
+                                        borderWidth: 2
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom'
+                                        }
+                                    }
+                                }
+                            });
+                        }, 100);
+                    </script>
+                </div>
+                <div class="col-md-6">
+                    <div class="summary-card h-100">
+                        <h5>Financial Indicators</h5>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Profit Margin</td>
+                                    <td>${Math.round((profit / totalRevenue) * 100)}%</td>
+                                </tr>
+                                <tr>
+                                    <td>Cost to Revenue Ratio</td>
+                                    <td>${Math.round((expenses / totalRevenue) * 100)}%</td>
+                                </tr>
+                                <tr>
+                                    <td>Average Revenue per Event</td>
+                                    <td>₹${Math.round(totalRevenue / data.summary.totalEvents)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Average Revenue per Registration</td>
+                                    <td>₹${Math.round(totalRevenue / data.summary.totalRegistrations)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <h5 class="mb-3">Event Revenue Breakdown</h5>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover report-table">
+                    <thead>
+                        <tr>
+                            <th>Event Name</th>
+                            <th>Type</th>
+                            <th>Revenue</th>
+                            <th>Expenses</th>
+                            <th>Profit</th>
+                            <th>Profit Margin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.events.map(event => {
+                            const eventExpenses = Math.round(event.revenue * 0.4);
+                            const eventProfit = event.revenue - eventExpenses;
+                            const eventProfitMargin = Math.round((eventProfit / event.revenue) * 100);
+                            
+                            return `
+                            <tr>
+                                <td>${event.name}</td>
+                                <td><span class="badge bg-${event.type === 'Technical' ? 'primary' : event.type === 'Workshop' ? 'success' : event.type === 'Cultural' ? 'danger' : 'warning'}">${event.type}</span></td>
+                                <td>₹${event.revenue}</td>
+                                <td>₹${eventExpenses}</td>
+                                <td>₹${eventProfit}</td>
+                                <td>
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar bg-${eventProfitMargin > 70 ? 'success' : eventProfitMargin > 50 ? 'info' : eventProfitMargin > 30 ? 'warning' : 'danger'}" role="progressbar" style="width: ${eventProfitMargin}%"></div>
+                                    </div>
+                                    <small>${eventProfitMargin}%</small>
+                                </td>
+                            </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    function exportChart(chartId, filename) {
+        const canvas = document.getElementById(chartId);
+        const link = document.createElement('a');
+        link.download = `${filename}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+    
+    function exportReportPDF() {
+        alert('Exporting to PDF... This feature would generate and download a PDF report.');
+        // In a real implementation, you would use a library like jsPDF to generate the PDF
+    }
+    
+    function exportReportExcel() {
+        alert('Exporting to Excel... This feature would generate and download an Excel report.');
+        // In a real implementation, you would use a library or API to generate Excel file
+    }
+</script>
+{% endblock %}

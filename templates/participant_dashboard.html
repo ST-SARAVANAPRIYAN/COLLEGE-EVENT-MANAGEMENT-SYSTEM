@@ -3,448 +3,671 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Participant Dashboard | CEMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Participant Dashboard | College Event Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f9;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Navigation */
+        .navbar {
+            padding: 15px 0;
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+        }
+        
+        .container {
+            width: 92%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            align-items: center;
+        }
+        
+        .nav-item {
+            margin-left: 15px;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 6px 12px;
+        }
+        
+        .nav-link:hover {
+            opacity: 0.85;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-light {
+            background-color: white;
+            color: #1a9be0;
+            border: none;
+        }
+        
+        .btn-light:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(26, 155, 224, 0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 155, 224, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: none;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        /* Dashboard Container */
+        .dashboard {
+            display: flex;
+            flex: 1;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+            padding: 20px 0;
+            height: calc(100vh - 60px);
+            position: sticky;
+            top: 60px;
+        }
+        
+        .profile-section {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 20px;
+        }
+        
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 10px;
+        }
+        
+        .profile-name {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .profile-email {
+            font-size: 14px;
+            color: #777;
+            text-align: center;
+        }
+        
+        .nav-menu {
+            list-style: none;
+        }
+        
+        .nav-menu-item {
+            margin-bottom: 5px;
+        }
+        
+        .nav-menu-link {
+            padding: 10px 20px;
+            display: block;
+            color: #555;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .nav-menu-link:hover {
+            background-color: rgba(26, 155, 224, 0.08);
+            color: #1a9be0;
+        }
+        
+        .nav-menu-link.active {
+            background: linear-gradient(135deg, rgba(26, 155, 224, 0.15), rgba(5, 194, 123, 0.15));
+            color: #1a9be0;
+            border-left: 3px solid #1a9be0;
+        }
+        
+        .nav-menu-icon {
+            margin-right: 10px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+        
+        .dashboard-header {
+            margin-bottom: 30px;
+        }
+        
+        .dashboard-title {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .dashboard-subtitle {
+            color: #777;
+            font-size: 16px;
+        }
+        
+        .dashboard-stats {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value.primary {
+            color: #1a9be0;
+        }
+        
+        .stat-value.success {
+            color: #05c27b;
+        }
+        
+        .stat-value.warning {
+            color: #ffc107;
+        }
+        
+        .stat-label {
+            color: #777;
+            font-size: 14px;
+        }
+        
+        /* Cards */
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+        
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            color: #333;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th, .table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .table th {
+            font-weight: 600;
+            color: #555;
+            background-color: #f9f9f9;
+        }
+        
+        .table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        /* Event Cards */
+        .event-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .event-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+        }
+        
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .event-img {
+            height: 150px;
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 36px;
+        }
+        
+        .event-content {
+            padding: 20px;
+        }
+        
+        .event-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+            text-decoration: none;
+        }
+        
+        .event-info {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .event-info div {
+            margin-bottom: 5px;
+        }
+        
+        .event-actions {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 15px;
+        }
+        
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .badge-primary {
+            background-color: rgba(26, 155, 224, 0.15);
+            color: #1a9be0;
+        }
+        
+        .badge-success {
+            background-color: rgba(5, 194, 123, 0.15);
+            color: #05c27b;
+        }
+        
+        .badge-warning {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #ffc107;
+        }
+        
+        .badge-danger {
+            background-color: rgba(220, 53, 69, 0.15);
+            color: #dc3545;
+        }
+        
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .dashboard {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                margin-bottom: 20px;
+            }
+            
+            .profile-section {
+                display: flex;
+                align-items: center;
+                text-align: left;
+            }
+            
+            .profile-avatar {
+                margin: 0 15px 0 0;
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+            
+            .nav-menu {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            
+            .nav-menu-item {
+                width: 50%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-stats {
+                flex-direction: column;
+            }
+            
+            .stat-card {
+                width: 100%;
+            }
+            
+            .nav-menu-item {
+                width: 100%;
+            }
+            
+            .navbar-nav {
+                display: none;
+            }
+            
+            .navbar-toggler {
+                display: block;
+            }
+            
+            .event-list {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">CEMS</a>
-            <div class="d-flex align-items-center">
-                <span class="text-white me-3">Welcome, {{ session.user_name }}</span>
-                <a href="/logout" class="btn btn-outline-light">Logout</a>
+    <header>
+        <nav class="navbar">
+            <div class="container navbar-container">
+                <a href="/" class="navbar-brand">CEMS</a>
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+                    <li class="nav-item"><a href="/events" class="nav-link">Events</a></li>
+                    <li class="nav-item"><a href="/logout" class="nav-link btn btn-light">Logout</a></li>
+                </ul>
             </div>
-        </div>
-    </nav>
-    <div class="container my-4">
-        <h2 class="mb-4">Participant Dashboard</h2>
-        <div class="row g-4">
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">Available Events</div>
-                    <div class="card-body" id="participant-events-list">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading events...</span>
-                        </div>
-                    </div>
+        </nav>
+    </header>
+    
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="profile-section">
+                <div class="profile-avatar">
+                    {{ current_user.name[:1] }}
                 </div>
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">My Registrations</div>
-                    <div class="card-body" id="my-registrations-list">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading registrations...</span>
+                <h2 class="profile-name">{{ current_user.name }}</h2>
+                <p class="profile-email">{{ current_user.email }}</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-menu-item">
+                    <a href="{{ url_for('participant_dashboard') }}" class="nav-menu-link active">
+                        <span class="nav-menu-icon">📊</span> Dashboard
+                    </a>
+                </li>
+                <li class="nav-menu-item">
+                    <a href="#registered" class="nav-menu-link">
+                        <span class="nav-menu-icon">📝</span> My Events
+                    </a>
+                </li>
+                <li class="nav-menu-item">
+                    <a href="/participant/profile" class="nav-menu-link">
+                        <span class="nav-menu-icon">👤</span> My Profile
+                    </a>
+                </li>
+                <li class="nav-menu-item">
+                    <a href="/participant/certificates" class="nav-menu-link">
+                        <span class="nav-menu-icon">🏆</span> Certificates
+                    </a>
+                </li>
+                <li class="nav-menu-item">
+                    <a href="/participant/notifications" class="nav-menu-link">
+                        <span class="nav-menu-icon">🔔</span> Notifications
+                    </a>
+                </li>
+                <li class="nav-menu-item">
+                    <a href="/participant/settings" class="nav-menu-link">
+                        <span class="nav-menu-icon">⚙️</span> Settings
+                    </a>
+                </li>
+            </ul>
+        </aside>
+        
+        <main class="main-content">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Welcome, {{ current_user.name }}!</h1>
+                <p class="dashboard-subtitle">Here's what's happening with your events</p>
+            </div>
+            
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-value primary">{{ stats.registered }}</div>
+                    <div class="stat-label">Registered Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value success">{{ stats.upcoming }}</div>
+                    <div class="stat-label">Upcoming Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value warning">{{ stats.certificates }}</div>
+                    <div class="stat-label">Certificates Earned</div>
+                </div>
+            </div>
+            
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Upcoming Events</h2>
+                </div>
+                <div class="card-body">
+                    <div class="event-list">
+                        {% for event in upcoming_events %}
+                        <div class="event-card">
+                            <div class="event-img">
+                                {{ event.title[:1] }}
+                            </div>
+                            <div class="event-content">
+                                <div>
+                                    <span class="badge badge-primary">{{ event.category }}</span>
+                                </div>
+                                <h3 class="event-title">{{ event.title }}</h3>
+                                <div class="event-info">
+                                    <div><span>📅</span> {{ event.date.strftime('%b %d, %Y') }}</div>
+                                    <div><span>⏰</span> {{ event.time }}</div>
+                                    <div><span>📍</span> {{ event.location }}</div>
+                                </div>
+                                <div class="event-actions">
+                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-primary">View Details</a>
+                                </div>
+                            </div>
                         </div>
+                        {% else %}
+                        <p>No upcoming events registered. <a href="/events">Browse events</a> to register.</p>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card mb-4" id="event-detail-card" style="display: none;">
-                    <div class="card-header bg-primary text-white">Event Details</div>
-                    <div class="card-body" id="event-detail-content">
-                    </div>
+            
+            <div class="dashboard-card" id="registered">
+                <div class="card-header">
+                    <h2 class="card-title">My Registered Events</h2>
                 </div>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">Notifications</div>
-                    <div class="card-body" id="notifications-list">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading notifications...</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">Quick Links</div>
-                    <div class="card-body">
-                        <a href="/" class="btn btn-outline-info w-100 mb-2">Back to Home Page</a>
-                        <div id="payment-section" class="mt-3">
-                            <h6>Need Help?</h6>
-                            <p class="small text-muted">If you're experiencing any issues with event registration or payment, please contact the event support team.</p>
-                        </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in registrations %}
+                                <tr>
+                                    <td>{{ registration.event.title }}</td>
+                                    <td>{{ registration.event.date.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ registration.event.time }}</td>
+                                    <td>{{ registration.event.location }}</td>
+                                    <td>
+                                        {% if registration.event.date < today %}
+                                        <span class="badge badge-success">Completed</span>
+                                        {% elif registration.is_paid %}
+                                        <span class="badge badge-primary">Confirmed</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('event_detail', event_id=registration.event.id) }}" class="btn btn-secondary">View</a>
+                                        {% if registration.event.date > today %}
+                                        <a href="{{ url_for('cancel_registration', event_id=registration.event.id) }}" class="btn btn-danger">Cancel</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6">No events registered yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
-
-    <!-- Payment Modal -->
-    <div class="modal fade" id="paymentModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Complete Payment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="payment-details">
-                        <p><strong>Event:</strong> <span id="payment-event-name"></span></p>
-                        <p><strong>Amount:</strong> ₹<span id="payment-amount"></span></p>
-                        <div id="razorpay-button"></div>
-                    </div>
-                </div>
-            </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 College Event Management System</p>
         </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    </footer>
+    
     <script>
-    // Get all events
-    async function getEvents() {
-        try {
-            const response = await fetch('/api/events');
-            if (!response.ok) throw new Error('Failed to fetch events');
-            const events = await response.json();
-            return events;
-        } catch (error) {
-            console.error('Error fetching events:', error);
-            return [];
-        }
-    }
-
-    // Get user's registrations
-    async function getMyRegistrations() {
-        try {
-            const response = await fetch('/api/my_registrations');
-            if (!response.ok) throw new Error('Failed to fetch registrations');
-            const registrations = await response.json();
-            return registrations;
-        } catch (error) {
-            console.error('Error fetching registrations:', error);
-            return [];
-        }
-    }
-
-    // Get user's notifications
-    async function getMyNotifications() {
-        try {
-            const response = await fetch('/api/my_notifications');
-            if (!response.ok) throw new Error('Failed to fetch notifications');
-            const notifications = await response.json();
-            return notifications;
-        } catch (error) {
-            console.error('Error fetching notifications:', error);
-            return [];
-        }
-    }
-
-    // Register for an event
-    async function registerForEvent(eventId) {
-        try {
-            const response = await fetch(`/api/events/${eventId}/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+        // Simple client-side routing for the sidebar menu
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuLinks = document.querySelectorAll('.nav-menu-link');
+            
+            menuLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (this.getAttribute('href').startsWith('#')) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute('href').substring(1);
+                        const targetElement = document.getElementById(targetId);
+                        
+                        if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth' });
+                        }
+                        
+                        menuLinks.forEach(l => l.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
             });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Registration failed');
-            }
-            
-            const result = await response.json();
-            
-            // If payment is required, show payment modal
-            if (result.requires_payment) {
-                showPaymentModal(result.payment_details);
-            } else {
-                alert('Registration successful!');
-                // Reload registrations
-                await loadMyRegistrations();
-            }
-            
-            return result;
-        } catch (error) {
-            alert('Error: ' + error.message);
-            console.error('Error registering for event:', error);
-        }
-    }
-
-    // Mark notification as read
-    async function markNotificationAsRead(notificationId) {
-        try {
-            const response = await fetch(`/api/mark_notification_read/${notificationId}`, {
-                method: 'POST'
-            });
-            if (!response.ok) throw new Error('Failed to mark notification as read');
-            // Update the notification in the UI
-            document.querySelector(`#notification-${notificationId}`).classList.remove('unread-notification');
-        } catch (error) {
-            console.error('Error marking notification as read:', error);
-        }
-    }
-
-    // Show Razorpay payment modal
-    function showPaymentModal(paymentDetails) {
-        document.getElementById('payment-event-name').textContent = paymentDetails.description.replace('Registration for ', '');
-        document.getElementById('payment-amount').textContent = (paymentDetails.amount / 100).toFixed(2);
-        
-        const options = {
-            key: paymentDetails.key_id,
-            amount: paymentDetails.amount,
-            currency: paymentDetails.currency,
-            name: paymentDetails.name,
-            description: paymentDetails.description,
-            order_id: paymentDetails.order_id,
-            prefill: {
-                name: paymentDetails.prefill.name,
-                email: paymentDetails.prefill.email
-            },
-            handler: function(response) {
-                verifyPayment(response.razorpay_payment_id, paymentDetails.registration_id);
-            },
-            theme: {
-                color: '#3399cc'
-            }
-        };
-        
-        const paymentObject = new Razorpay(options);
-        document.getElementById('razorpay-button').innerHTML = '';
-        const payButton = document.createElement('button');
-        payButton.className = 'btn btn-primary w-100';
-        payButton.innerText = 'Pay Now';
-        payButton.onclick = function() {
-            paymentObject.open();
-        };
-        document.getElementById('razorpay-button').appendChild(payButton);
-        
-        const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-        paymentModal.show();
-    }
-
-    // Verify payment with backend
-    async function verifyPayment(paymentId, registrationId) {
-        try {
-            const response = await fetch('/api/payments/verify', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    payment_id: paymentId,
-                    registration_id: registrationId
-                })
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Payment verification failed');
-            }
-            
-            alert('Payment successful! Your registration is confirmed.');
-            
-            // Close the payment modal
-            bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
-            
-            // Reload registrations
-            await loadMyRegistrations();
-            
-        } catch (error) {
-            alert('Error: ' + error.message);
-            console.error('Error verifying payment:', error);
-        }
-    }
-
-    // Render events list
-    function renderEventsList(events, registrations) {
-        const list = document.getElementById('participant-events-list');
-        
-        // Create a map of registered event IDs for easy lookup
-        const registeredEventIds = new Map();
-        registrations.forEach(reg => {
-            registeredEventIds.set(reg.event_id, reg);
         });
-        
-        if (events.length === 0) {
-            list.innerHTML = '<p class="text-muted">No events available.</p>';
-            return;
-        }
-        
-        list.innerHTML = events.map(ev => {
-            const isRegistered = registeredEventIds.has(ev.id);
-            
-            // Determine card style based on event tag
-            let cardClass = 'card mb-2';
-            if (ev.tag === 'technical') {
-                cardClass += ' technical-card'; // Add CSS for neon tech-style in style.css
-            } else if (ev.tag === 'non-technical') {
-                cardClass += ' non-technical-card'; // Add CSS for fun-style in style.css
-            }
-            
-            return `
-                <div class='${cardClass}' data-event-id="${ev.id}">
-                    <div class='card-body'>
-                        <div class='d-flex justify-content-between align-items-center mb-2'>
-                            <div>
-                                <strong>${ev.name}</strong> 
-                                <span class='badge ${ev.tag==='technical'?'bg-primary':'bg-warning text-dark'} ms-2'>${ev.tag}</span>
-                            </div>
-                            <span class='badge bg-info'>₹${ev.fee}</span>
-                        </div>
-                        <div class='d-flex justify-content-between align-items-center'>
-                            <small class='text-muted'>${ev.date}</small>
-                            <div>
-                                <button class='btn btn-outline-success btn-sm' 
-                                        ${isRegistered?'disabled':''} 
-                                        onclick="${isRegistered ? '' : `registerForEvent(${ev.id})`}">
-                                    ${isRegistered?'Registered':'Register'}
-                                </button>
-                                ${ev.has_exploration ? 
-                                    `<a href='/event_exploration/${ev.id}' target='_blank' class='btn btn-outline-primary btn-sm ms-2'>Explore</a>` : ''}
-                                <button class='btn btn-outline-info btn-sm ms-2' onclick="showEventDetails(${ev.id})">
-                                    Details
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // Render registrations list
-    function renderRegistrationsList(registrations) {
-        const list = document.getElementById('my-registrations-list');
-        
-        if (registrations.length === 0) {
-            list.innerHTML = '<p class="text-muted">No registrations found. Register for events to see them here.</p>';
-            return;
-        }
-        
-        list.innerHTML = registrations.map(reg => {
-            return `
-                <div class='card mb-2'>
-                    <div class='card-body'>
-                        <div class='d-flex justify-content-between align-items-center mb-2'>
-                            <div>
-                                <strong>${reg.event_name}</strong> 
-                                <span class='badge ${reg.event_tag==='technical'?'bg-primary':'bg-warning text-dark'} ms-2'>${reg.event_tag}</span>
-                            </div>
-                            <span class='badge ${reg.payment_status==='completed'?'bg-success':'bg-warning text-dark'}'>${reg.payment_status}</span>
-                        </div>
-                        <div class='d-flex justify-content-between align-items-center'>
-                            <small class='text-muted'>Date: ${reg.event_date} | Registered on: ${reg.registration_date}</small>
-                            <div>
-                                ${reg.has_exploration ? 
-                                    `<a href='/event_exploration/${reg.event_id}' target='_blank' class='btn btn-outline-primary btn-sm'>Explore</a>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // Render notifications list
-    function renderNotificationsList(notifications) {
-        const list = document.getElementById('notifications-list');
-        
-        if (notifications.length === 0) {
-            list.innerHTML = '<p class="text-muted">No notifications.</p>';
-            return;
-        }
-        
-        list.innerHTML = notifications.map(notification => {
-            const notificationClass = notification.is_read ? '' : 'unread-notification';
-            
-            return `
-                <div id="notification-${notification.id}" class="notification-item ${notificationClass} mb-2 p-2" 
-                     onclick="markNotificationAsRead(${notification.id})">
-                    <p class="mb-1">${notification.message}</p>
-                    <small class="text-muted">${new Date(notification.created_at).toLocaleString()}</small>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // Show event details
-    async function showEventDetails(eventId) {
-        try {
-            const response = await fetch(`/api/events/${eventId}`);
-            if (!response.ok) throw new Error('Failed to fetch event details');
-            
-            const event = await response.json();
-            const detailCard = document.getElementById('event-detail-card');
-            const detailContent = document.getElementById('event-detail-content');
-            
-            // Determine style based on event tag
-            let headerClass = 'bg-primary';
-            if (event.tag === 'technical') {
-                headerClass = 'bg-primary technical-header';
-            } else if (event.tag === 'non-technical') {
-                headerClass = 'bg-warning text-dark non-technical-header';
-            }
-            
-            // Update card header
-            detailCard.querySelector('.card-header').className = `card-header ${headerClass} text-white`;
-            detailCard.querySelector('.card-header').textContent = event.name;
-            
-            // Build detail content
-            let content = `
-                <p><strong>Date:</strong> ${event.date}</p>
-                <p><strong>Fee:</strong> ₹${event.fee}</p>
-                <p><strong>Description:</strong><br>${event.description || 'No description available.'}</p>
-            `;
-            
-            // Add media if available
-            if (event.image) {
-                content += `<img src="${event.image}" class="img-fluid rounded mb-3" alt="${event.name}">`;
-            }
-            
-            if (event.video) {
-                content += `
-                <div class="ratio ratio-16x9 mb-3">
-                    <video controls>
-                        <source src="${event.video}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>`;
-            }
-            
-            // Add brochure download if available
-            if (event.brochure) {
-                content += `<a href="${event.brochure}" class="btn btn-outline-info w-100 mb-2" download>Download Brochure</a>`;
-            }
-            
-            // Add exploration link if available
-            if (event.has_exploration) {
-                content += `<a href="/event_exploration/${event.id}" target="_blank" class="btn btn-primary w-100">Explore Event</a>`;
-            }
-            
-            detailContent.innerHTML = content;
-            detailCard.style.display = 'block';
-            
-        } catch (error) {
-            console.error('Error showing event details:', error);
-        }
-    }
-
-    // Load events
-    async function loadEvents() {
-        const events = await getEvents();
-        const registrations = await getMyRegistrations();
-        renderEventsList(events, registrations);
-    }
-
-    // Load registrations
-    async function loadMyRegistrations() {
-        const registrations = await getMyRegistrations();
-        renderRegistrationsList(registrations);
-    }
-
-    // Load notifications
-    async function loadNotifications() {
-        const notifications = await getMyNotifications();
-        renderNotificationsList(notifications);
-    }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', async function() {
-        await loadEvents();
-        await loadMyRegistrations();
-        await loadNotifications();
-    });
     </script>
 </body>
 </html>

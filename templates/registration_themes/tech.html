@@ -1,0 +1,356 @@
+{% extends "registration_base.html" %}
+
+{% block title %}{{ event.name }} - Registration{% endblock %}
+
+{% block theme_styles %}
+    .registration-container {
+      position: relative;
+      z-index: 10;
+      max-width: 800px;
+      margin: 5% auto;
+      background-color: rgba(15, 25, 35, 0.65); /* Reduced opacity for better background visibility */
+      color: #e0e0e0;
+      padding: 2.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #00e8ff;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px); /* Added strong blur effect for readability */
+      text-align: center;
+    }
+
+    .header-section h1 {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(45deg, #00e8ff, #6a11cb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+    }
+    
+    .event-details-section {
+      color: #9ea4ac;
+      margin-bottom: 2rem;
+      background-color: rgba(15, 25, 35, 0.5); /* Semi-transparent background */
+      padding: 1rem;
+      border-radius: 6px;
+      backdrop-filter: blur(5px); /* Light blur effect */
+    }
+    
+    .event-details-section i {
+      color: #00e8ff;
+    }
+
+    .form-control, .form-select {
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.03); /* More transparent form fields */
+      border: 1px solid rgba(0, 232, 255, 0.2);
+      color: #e0e0e0;
+      padding: 0.8rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      backdrop-filter: blur(2px); /* Light blur for better readability */
+    }
+
+    .form-control:focus, .form-select:focus {
+      background-color: rgba(255, 255, 255, 0.06); /* Slightly less transparent on focus */
+      border-color: #00e8ff;
+      outline: none;
+      box-shadow: 0 0 0 0.25rem rgba(0, 232, 255, 0.25);
+      color: #ffffff;
+    }
+    
+    .form-label {
+      color: #9ea4ac;
+      font-weight: 500;
+      text-align: left;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn-tech {
+      background: linear-gradient(45deg, #00e8ff, #6a11cb);
+      border: none;
+      padding: 0.8rem 2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: #fff;
+      border-radius: 4px;
+    }
+
+    .btn-tech:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 232, 255, 0.4);
+    }
+    
+    /* Make sure form elements are visible */
+    .registration-form-section {
+        position: relative;
+        z-index: 11;
+    }
+{% endblock %}
+
+{% block submit_btn_class %}btn-tech{% endblock %}
+
+{% block additional_styles %}
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    body {
+      height: 100vh;
+      overflow: auto;
+      background-color: #0a1118;
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    .parallax-wrapper {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      top: 0;
+      left: 0;
+      perspective: 1500px;
+      z-index: -1;
+    }
+    
+    .parallax-item {
+      position: absolute;
+      transform-style: preserve-3d;
+      transform: translate(-50%, -50%);
+      will-change: transform;
+      pointer-events: none;
+    }
+    
+    .parallax-item img {
+      display: block;
+      width: 100%;
+    }
+    
+    /* Animation for background */
+    @keyframes pulse {
+      0% {
+        opacity: 0.8;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.8;
+      }
+    }
+    
+    /* Apply animation to background */
+    .parallax-item.tech-bg img {
+      animation: pulse 8s ease-in-out infinite;
+    }
+    
+    .parallax-item.tech-bg {
+      width: 100%;
+      height: 100%;
+      top: 50%;
+      left: 50%;
+      z-index: -10;
+    }
+    
+    .parallax-item.tech-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .tech-grid-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(0deg, transparent 24%, rgba(0, 232, 255, .05) 25%, rgba(0, 232, 255, .05) 26%, transparent 27%, transparent 74%, rgba(0, 232, 255, .05) 75%, rgba(0, 232, 255, .05) 76%, transparent 77%, transparent), 
+                        linear-gradient(90deg, transparent 24%, rgba(0, 232, 255, .05) 25%, rgba(0, 232, 255, .05) 26%, transparent 27%, transparent 74%, rgba(0, 232, 255, .05) 75%, rgba(0, 232, 255, .05) 76%, transparent 77%, transparent);
+      background-size: 50px 50px;
+      z-index: -10;
+      pointer-events: none;
+    }
+
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 300%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0, 232, 255, 0.2), transparent);
+      animation: scan 6s linear infinite;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    @keyframes scan {
+      0% {
+        top: 0;
+      }
+      100% {
+        top: 100%;
+      }
+    }
+
+    .tech-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: #00e8ff;
+      box-shadow: 0 0 15px #00e8ff, 0 0 30px #00e8ff;
+      animation: tech-border-pulse 2s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes tech-border-pulse {
+      0% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.6;
+      }
+    }
+
+    .hologram-effect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(transparent, transparent 2px, rgba(0, 232, 255, 0.03) 3px, rgba(0, 232, 255, 0.03) 3px);
+      pointer-events: none;
+      z-index: 2;
+    }
+    
+    /* Floating digital particles */
+    .digital-particle {
+      position: absolute;
+      background-color: rgba(0, 232, 255, 0.6);
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(1px);
+      box-shadow: 0 0 10px rgba(0, 232, 255, 0.8);
+      z-index: -5;
+    }
+    
+    @keyframes float {
+      0% {
+        transform: translateY(0) translateX(0);
+      }
+      50% {
+        transform: translateY(-20px) translateX(10px);
+      }
+      100% {
+        transform: translateY(0) translateX(0);
+      }
+    }
+    
+    .lead {
+      color: #9ea4ac;
+      font-weight: 300;
+      margin-bottom: 2rem;
+    }
+    
+    /* Registration container stacking */
+    .registration-container {
+      z-index: 10;
+      position: relative;
+      margin-top: 3rem;
+      margin-bottom: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block container_class %}registration-container{% endblock %}
+
+{% block additional_content_before %}
+<div class="tech-grid-overlay"></div>
+
+<div class="parallax-wrapper">
+    <div class="parallax-item tech-bg" data-speedx="0.01" data-speedy="0.01" data-speedz="0" data-rotation="0">
+        <img src="{{ theme_assets_path }}tech/tech_background.gif" class="layer background" />
+    </div>
+    <div id="particles-container"></div>
+</div>
+{% endblock %}
+
+{% block header_section %}
+<div class="scan-line"></div>
+<div class="tech-glow"></div>
+<div class="hologram-effect"></div>
+<h1>{{ event.name }}</h1>
+<p class="lead">Join the future of innovation and technology</p>
+{% endblock %}
+
+{% block additional_scripts %}
+<script>
+    // Parallax effect for background
+    const parallaxBg = document.querySelector('.parallax-item.tech-bg');
+    document.addEventListener('mousemove', e => {
+      let xValue = e.clientX - window.innerWidth / 2;
+      let yValue = e.clientY - window.innerHeight / 2;
+      
+      // Subtle parallax for background
+      if (parallaxBg) {
+        parallaxBg.style.transform = `
+          translate(-50%, -50%)
+          translateX(${-xValue * 0.01}px)
+          translateY(${-yValue * 0.01}px)
+        `;
+      }
+    });
+
+    // Create digital particles to replace the removed element images
+    function createDigitalParticles() {
+      const particlesContainer = document.getElementById('particles-container');
+      if (!particlesContainer) return;
+      
+      const numParticles = 30;
+      
+      for (let i = 0; i < numParticles; i++) {
+        const size = Math.random() * 6 + 2;
+        const opacity = Math.random() * 0.5 + 0.2;
+        
+        const particle = document.createElement('div');
+        particle.className = 'digital-particle';
+        
+        // Random position
+        const posX = Math.random() * 100;
+        const posY = Math.random() * 100;
+        
+        // Random movement animation
+        const duration = Math.random() * 20 + 10;
+        const delay = Math.random() * 5;
+        
+        particle.style.cssText = `
+          width: ${size}px;
+          height: ${size}px;
+          left: ${posX}%;
+          top: ${posY}%;
+          opacity: ${opacity};
+          animation: float ${duration}s ease-in-out infinite;
+          animation-delay: ${delay}s;
+        `;
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        createDigitalParticles();
+    });
+</script>
+{% endblock %}
