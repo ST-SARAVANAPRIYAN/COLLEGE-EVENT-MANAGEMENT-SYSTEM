@@ -52,6 +52,8 @@
             display: flex;
             list-style: none;
             align-items: center;
+            padding: 0;
+            margin: 0;
         }
         
         .nav-item {
@@ -78,6 +80,7 @@
             font-weight: 500;
             text-decoration: none;
             transition: all 0.3s;
+            border: none;
         }
         
         .btn-light {
@@ -177,10 +180,12 @@
         .form-check {
             display: flex;
             margin-bottom: 20px;
+            align-items: flex-start;
         }
         
         .form-check-input {
             margin-right: 10px;
+            margin-top: 5px;
         }
         
         .signup-footer {
@@ -336,6 +341,74 @@
         .hidden {
             display: none;
         }
+        
+        /* Responsive styles for various screen sizes */
+        @media (max-width: 576px) {
+            .signup-container {
+                max-width: 100%;
+                margin: 0 15px;
+                border-radius: 10px;
+            }
+            
+            .signup-header {
+                padding: 20px;
+            }
+            
+            .signup-body {
+                padding: 20px;
+            }
+            
+            .col-6 {
+                width: 100%;
+                padding: 0;
+            }
+            
+            .main {
+                padding: 20px 0;
+            }
+            
+            .navbar-brand {
+                font-size: 22px;
+            }
+            
+            .nav-item {
+                margin-left: 10px;
+            }
+            
+            .nav-link {
+                padding: 6px 12px;
+            }
+            
+            .otp-inputs {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            .otp-input {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+        }
+        
+        @media (min-width: 577px) and (max-width: 768px) {
+            .signup-container {
+                max-width: 500px;
+            }
+        }
+        
+        @media (min-width: 769px) and (max-width: 992px) {
+            .signup-container {
+                max-width: 500px;
+            }
+        }
+        
+        @media (min-width: 993px) {
+            .signup-container {
+                max-width: 500px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -353,7 +426,7 @@
     </header>
     
     <main>
-        <div class="container">
+        <div class="container" style="display: flex; justify-content: center; align-items: center;">
             <div class="signup-container">
                 <div class="signup-header">
                     <h2>Create Account</h2>
@@ -422,13 +495,6 @@
                         <div class="form-group">
                             <label for="confirm_password" class="form-label">Confirm Password</label>
                             <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
-                        </div>
-                        
-                        <!-- Referral code field (optional) -->
-                        <div class="form-group">
-                            <label for="referral_code" class="form-label">Referral Code (Optional)</label>
-                            <input type="text" id="referral_code" name="referral_code" class="form-control">
-                            <div class="form-text">Enter a referral code if you have one</div>
                         </div>
                         
                         <div class="form-check">

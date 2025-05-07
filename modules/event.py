@@ -858,7 +858,7 @@ def preview_registration_theme(theme):
     Preview a registration theme with sample data
     """
     try:
-        if theme not in NEW_THEMES:
+        if (theme not in NEW_THEMES):
             return f"Theme '{theme}' is not available.", 404
 
         # Get event data from query parameters or use sample data
@@ -911,3 +911,149 @@ def api_preview_registration_theme(event_id, theme):
             theme_assets_path='/static/theme_assets/')  # Fixed path - removed incorrect space
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@event_bp.route('/register-form/<int:event_id>/<theme>')
+def register_form(event_id, theme):
+    """
+    Display a themed registration form for an event
+    """
+    if not session.get('user_id'):
+        flash('Please login to register for an event', 'warning')
+        return redirect(url_for('auth.login', next=f'/register-form/{event_id}/{theme}'))
+        
+    try:
+        # Check if event exists
+        event = Event.query.get_or_404(event_id)
+        
+        # Check if already registered
+        existing_reg = Registration.query.filter_by(
+            event_id=event_id,
+            user_id=session['user_id']
+        ).first()
+        
+        if existing_reg:
+            flash('You are already registered for this event', 'info')
+            return redirect(url_for('event.event_detail', event_id=event_id))
+            
+        # Check if seats available
+        if event.seats_available <= 0:
+            flash('Sorry, no seats available', 'danger')
+            return redirect(url_for('event.event_detail', event_id=event_id))
+            
+        # Check registration deadline
+        if event.registration_end_date and event.registration_end_date < datetime.now():
+            flash('Registration deadline has passed', 'danger')
+            return redirect(url_for('event.event_detail', event_id=event_id))
+        
+        # Validate theme
+        if theme not in NEW_THEMES:
+            theme = 'minimalist'  # Default fallback theme
+        
+        # Get user information
+        user = User.query.get(session['user_id'])
+        
+        # Get the custom data if available
+        custom_data = {}
+        if event.custom_data:
+            try:
+                custom_data = json.loads(event.custom_data)
+            except:
+                pass
+        
+        # Render the themed registration form
+        return render_template(
+            f'registration_themes/{theme}.html',
+            event=event,
+            user=user,
+            theme_assets_path='/static/theme_assets/',
+            custom_data=custom_data
+        )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        flash(f'Error loading registration form: {str(e)}', 'danger')
+        return redirect(url_for('event.event_detail', event_id=event_id))
+
+@event_bp.route('/event/<int:event_id>/theme-selector')
+def event_theme_selector(event_id):
+    """
+    Display a page to preview and select registration themes for an event
+    """
+    try:
+        event = Event.query.get_or_404(event_id)
+        
+        # Get custom data with current theme
+        custom_data = {}
+        current_theme = 'minimalist'  # Default theme
+        if event.custom_data:
+            try:
+                custom_data = json.loads(event.custom_data)
+                current_theme = custom_data.get('registration_theme', 'minimalist')
+            except:
+                pass
+                
+        # Ensure theme is in available themes
+        if current_theme not in NEW_THEMES:
+            current_theme = 'minimalist'
+        
+        # Get is_organiser flag
+        is_organiser = False
+        if session.get('user_id') and session.get('user_role') in ['organiser', 'admin']:
+            # Check if this user is the organiser for this event
+            if event.organiser_id == session.get('user_id'):
+                is_organiser = True
+        
+        # Render theme selector page
+        return render_template(
+            'theme_selector.html',
+            event=event,
+            themes=NEW_THEMES,
+            current_theme=current_theme,
+            is_organiser=is_organiser,
+            theme_assets_path='/static/theme_assets/'
+        )
+    except Exception as e:
+        flash(f'Error loading theme selector: {str(e)}', 'danger')
+        return redirect(url_for('event.event_detail', event_id=event_id))
+
+@event_bp.route('/event/<int:event_id>/update-theme/<theme>', methods=['POST'])
+def update_event_theme(event_id, theme):
+    """
+    Update an event's registration theme (for organisers only)
+    """
+    if not session.get('user_id') or session.get('user_role') not in ['organiser', 'admin']:
+        flash('You do not have permission to update event themes', 'danger')
+        return redirect(url_for('event.event_detail', event_id=event_id))
+        
+    try:
+        event = Event.query.get_or_404(event_id)
+        
+        # Verify user is organiser of this event
+        if event.organiser_id != session.get('user_id') and session.get('user_role') != 'admin':
+            flash('You do not have permission to update this event', 'danger')
+            return redirect(url_for('event.event_detail', event_id=event_id))
+        
+        # Validate theme
+        if theme not in NEW_THEMES:
+            flash(f'Invalid theme: {theme}', 'danger')
+            return redirect(url_for('event.event_theme_selector', event_id=event_id))
+        
+        # Update event's custom_data with new theme
+        custom_data = {}
+        if event.custom_data:
+            try:
+                custom_data = json.loads(event.custom_data)
+            except:
+                pass
+                
+        custom_data['registration_theme'] = theme
+        event.custom_data = json.dumps(custom_data)
+        
+        db.session.commit()
+        
+        flash(f'Registration theme updated to {theme}', 'success')
+        return redirect(url_for('event.event_theme_selector', event_id=event_id))
+    except Exception as e:
+        flash(f'Error updating theme: {str(e)}', 'danger')
+        return redirect(url_for('event.event_theme_selector', event_id=event_id))

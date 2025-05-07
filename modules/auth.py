@@ -84,7 +84,6 @@ def signup_request_otp():
         lastname = request.form.get('lastname')
         email = request.form.get('email')
         password = request.form.get('password')
-        referral_code = request.form.get('referral_code', '')
         next_url = request.form.get('next', '')
         
         # Validate inputs
@@ -108,8 +107,7 @@ def signup_request_otp():
             'lastname': lastname,
             'email': email,
             'password': password,
-            'role': 'participant',  # Default role is participant
-            'referral_code': referral_code
+            'role': 'participant'  # Default role is participant
         }
         session['signup_otp'] = otp
         session['signup_otp_expires'] = (datetime.now() + timedelta(minutes=10)).timestamp()
@@ -163,73 +161,72 @@ def signup_verify_otp():
             role=user_data['role']
         )
         
-        # Store referral code if provided
-        if 'referral_code' in user_data and user_data['referral_code']:
-            new_user.referral_code = user_data['referral_code']
+        # Add user to database
+        try:
+            db.session.add(new_user)
+            db.session.commit()
             
-            # Process the referral if needed
-            # You can add referral processing logic here
-            # For example, find the referring user and update their points/rewards
+            # Send welcome email
+            send_email(
+                user_data['email'],
+                "Welcome to CEMS",
+                f"""
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: #3e64ff; color: white; padding: 10px 20px; border-radius: 5px 5px 0 0; }}
+                        .content {{ padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px; }}
+                        .footer {{ margin-top: 20px; font-size: 12px; color: #777; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h2>Welcome to CEMS!</h2>
+                        </div>
+                        <div class="content">
+                            <p>Hi {user_data['firstname']},</p>
+                            <p>Welcome to the College Event Management System! Your account has been created successfully.</p>
+                            <p>You can now browse and register for events, track your registrations, and more!</p>
+                            <p>Regards,<br>College Event Management System Team</p>
+                        </div>
+                        <div class="footer">
+                            <p>This email was sent to {user_data['email']}. If you prefer not to receive these emails, please contact support.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+            )
             
-        db.session.add(new_user)
-        db.session.commit()
-        
-        # Send welcome email
-        send_email(
-            user_data['email'],
-            "Welcome to CEMS",
-            f"""
-            <html>
-            <head>
-                <style>
-                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                    .header {{ background-color: #3e64ff; color: white; padding: 10px 20px; border-radius: 5px 5px 0 0; }}
-                    .content {{ padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px; }}
-                    .footer {{ margin-top: 20px; font-size: 12px; color: #777; }}
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h2>Welcome to CEMS!</h2>
-                    </div>
-                    <div class="content">
-                        <p>Hi {user_data['firstname']},</p>
-                        <p>Welcome to the College Event Management System! Your account has been created successfully.</p>
-                        <p>You can now browse and register for events, track your registrations, and more!</p>
-                        <p>Regards,<br>College Event Management System Team</p>
-                    </div>
-                    <div class="footer">
-                        <p>This email was sent to {user_data['email']}. If you prefer not to receive these emails, please contact support.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
-        )
-        
-        # Login user with Flask-Login
-        login_user(new_user)
-        
-        # Store user info in session
-        session['user_id'] = new_user.id
-        session['user_role'] = new_user.role
-        session['user_name'] = new_user.name
-        session['user_email'] = new_user.email
-        
-        # Clear signup session data
-        for key in ['signup_otp', 'signup_data', 'signup_otp_expires']:
-            if key in session:
-                session.pop(key)
-        
-        # Redirect based on next URL or to participant dashboard
-        next_url = session.pop('signup_next_url', None)
-        if next_url:
-            return redirect(next_url)
-        
-        flash('Account created successfully!', 'success')
-        return redirect(url_for('participant.dashboard'))
+            # Login user with Flask-Login
+            login_user(new_user)
+            
+            # Store user info in session
+            session['user_id'] = new_user.id
+            session['user_role'] = new_user.role
+            session['user_name'] = new_user.name
+            session['user_email'] = new_user.email
+            
+            # Clear signup session data
+            for key in ['signup_otp', 'signup_data', 'signup_otp_expires']:
+                if key in session:
+                    session.pop(key)
+            
+            # Redirect based on next URL or to participant dashboard
+            next_url = session.pop('signup_next_url', None)
+            if next_url:
+                return redirect(next_url)
+            
+            flash('Account created successfully!', 'success')
+            return redirect(url_for('participant.dashboard'))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating user account: {e}")
+            return render_template('signup.html', otp_sent=True, email=email, error=f'Error creating account: {str(e)}')
         
     except Exception as e:
         print(f"Error in signup verify OTP: {e}")

@@ -4,13 +4,270 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ event.name }} | CEMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Roboto:wght@300;400;500&family=Quicksand:wght@400;500;600&family=Comic+Neue:wght@400;700&family=Monoton&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    {% set theme = 'minimalist' %}
+    {% if event.custom_data %}
+        {% set custom_data = event.custom_data | tojson | fromjson %}
+        {% if custom_data.registration_theme %}
+            {% set theme = custom_data.registration_theme %}
+        {% endif %}
+    {% endif %}
+    
     <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background-color: #f5f5f9;
+        }
+        
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+        }
+        
+        /* Layout Utilities */
+        .container {
+            width: 92%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -15px;
+        }
+        
+        .col {
+            padding: 0 15px;
+            flex: 1;
+        }
+        
+        /* Grid System */
+        .col-lg-8 {
+            width: 66.666667%;
+            padding: 0 15px;
+        }
+        
+        .col-lg-4 {
+            width: 33.333333%;
+            padding: 0 15px;
+        }
+        
+        .col-md-6 {
+            width: 50%;
+            padding: 0 15px;
+        }
+        
+        .col-lg-10 {
+            width: 83.333333%;
+            padding: 0 15px;
+        }
+        
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Navigation Styling */
+        .navbar {
+            padding: 20px 0;
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            align-items: center;
+        }
+        
+        .nav-item {
+            margin-left: 20px;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 8px 16px;
+        }
+        
+        .nav-link:hover {
+            opacity: 0.85;
+        }
+        
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s;
+            text-align: center;
+            border: none;
+        }
+        
+        .btn-outline-light {
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            color: white;
+            background: transparent;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: white;
+            color: #1a9be0;
+        }
+        
+        .btn-light {
+            background-color: white;
+            color: #1a9be0;
+        }
+        
+        .btn-light:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(26, 155, 224, 0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 155, 224, 0.3);
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid #1a9be0;
+            color: #1a9be0;
+            background: transparent;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: #1a9be0;
+            color: white;
+        }
+        
+        .btn-lg {
+            padding: 12px 26px;
+            font-size: 18px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .w-100 {
+            width: 100%;
+        }
+        
+        /* Hamburger for Mobile */
+        .navbar-toggler {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        /* Dropdown styling */
+        .dropdown {
+            position: relative;
+        }
+        
+        .dropdown-toggle::after {
+            content: "▼";
+            font-size: 10px;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            min-width: 180px;
+            z-index: 1000;
+            padding: 10px 0;
+        }
+        
+        .dropdown-menu.show {
+            display: block;
+        }
+        
+        .dropdown-item {
+            display: block;
+            padding: 8px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background-color: #e9ecef;
+            margin: 8px 0;
+        }
+        
         /* Event Cover */
         .event-cover {
             height: 500px;
@@ -18,6 +275,7 @@
             background-position: center;
             position: relative;
             color: white;
+            margin-top: 70px;
         }
         
         .event-cover::before {
@@ -40,6 +298,42 @@
             padding-bottom: 50px;
         }
         
+        /* Badge styles */
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .bg-warning {
+            background-color: #ffc107;
+        }
+        
+        .text-dark {
+            color: #212529;
+        }
+        
+        .mb-2 {
+            margin-bottom: 10px;
+        }
+        
+        /* Typography utilities */
+        .display-4 {
+            font-size: 40px;
+            font-weight: 700;
+        }
+        
+        .fw-bold {
+            font-weight: 700;
+        }
+        
+        .lead {
+            font-size: 18px;
+        }
+        
+        /* Event Meta */
         .event-meta {
             display: flex;
             flex-wrap: wrap;
@@ -58,52 +352,58 @@
             font-size: 1.2rem;
         }
         
+        /* Card Styling */
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .card-title {
+            margin-bottom: 15px;
+        }
+        
+        .card-text {
+            margin-bottom: 15px;
+        }
+        
         /* Event Details */
         .event-details {
             padding: 50px 0;
         }
         
-        .event-sidebar {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            padding: 25px;
+        /* Video styling */
+        .ratio {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
         }
         
-        .event-sidebar-item {
-            margin-bottom: 25px;
+        .ratio::before {
+            content: "";
+            display: block;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
         }
         
-        .event-sidebar-item:last-child {
-            margin-bottom: 0;
+        .ratio > * {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
         
-        .event-sidebar-title {
-            font-weight: 600;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
-        .tag {
-            display: inline-block;
-            padding: 5px 12px;
-            background-color: #e9ecef;
-            border-radius: 50px;
-            font-size: 0.85rem;
-        }
-        
-        /* Registration Section */
-        .registration-section {
-            margin-top: 30px;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
+        /* Venue map */
+        #venue-map {
+            height: 300px;
+            width: 100%;
+            border-radius: 8px;
         }
         
         /* Sub-events */
@@ -144,19 +444,46 @@
             transform: scale(1.05);
         }
         
-        /* Resource Badges */
-        .resource-badge {
-            display: inline-flex;
-            align-items: center;
-            background-color: #e9ecef;
-            padding: 5px 10px;
-            border-radius: 50px;
-            margin-right: 10px;
-            margin-bottom: 10px;
+        /* Text utilities */
+        .text-center {
+            text-align: center;
         }
         
-        .resource-badge i {
+        .text-muted {
+            color: #6c757d;
+        }
+        
+        .small {
+            font-size: 85%;
+        }
+        
+        /* Margin and padding utilities */
+        .mb-3 {
+            margin-bottom: 15px;
+        }
+        
+        .mb-4 {
+            margin-bottom: 20px;
+        }
+        
+        .mt-3 {
+            margin-top: 15px;
+        }
+        
+        .mt-4 {
+            margin-top: 20px;
+        }
+        
+        .mt-5 {
+            margin-top: 25px;
+        }
+        
+        .me-1 {
             margin-right: 5px;
+        }
+        
+        .me-2 {
+            margin-right: 10px;
         }
         
         /* Registration Status */
@@ -183,191 +510,381 @@
             color: #842029;
         }
         
-        /* Custom Registration Theme Styles */
-        .registration-minimalistic-elegant {
-            font-family: 'Poppins', sans-serif;
-            background-color: #ffffff;
-            color: #333;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        /* Progress bar */
+        .progress {
+            display: flex;
+            height: 10px;
+            overflow: hidden;
+            font-size: 0.75rem;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 15px;
         }
         
-        .registration-vibrant-colorful {
-            font-family: 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            color: white;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        .progress-bar {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            background-color: #1a9be0;
+            transition: width 0.6s ease;
         }
         
-        .registration-vibrant-colorful .form-control, 
-        .registration-vibrant-colorful .form-select {
-            background-color: rgba(255,255,255,0.1);
-            border: none;
-            border-bottom: 1px solid rgba(255,255,255,0.3);
-            border-radius: 0;
-            color: white;
+        .bg-danger {
+            background-color: #dc3545 !important;
         }
         
-        .registration-vibrant-colorful .form-control::placeholder {
-            color: rgba(255,255,255,0.6);
+        .bg-warning {
+            background-color: #ffc107 !important;
         }
         
-        .registration-classic-formal {
-            font-family: 'Georgia', serif;
+        .bg-success {
+            background-color: #28a745 !important;
+        }
+        
+        /* Alert styles */
+        .alert {
+            position: relative;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-success {
+            color: #0f5132;
+            background-color: #d1e7dd;
+        }
+        
+        /* Event sidebar */
+        .event-sidebar {
             background-color: #f8f9fa;
-            color: #1a365d;
-            border: 1px solid #dee2e6;
-            border-radius: 0;
-        }
-        
-        .registration-classic-formal h3 {
-            border-bottom: 2px solid #1a365d;
-            padding-bottom: 10px;
-        }
-        
-        .registration-classic-formal .form-control,
-        .registration-classic-formal .form-select {
-            border-radius: 0;
-        }
-        
-        .registration-animated-fun {
-            font-family: 'Quicksand', sans-serif;
-            background-color: rgba(255,255,255,0.85);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .registration-animated-fun .form-control,
-        .registration-animated-fun .form-select {
-            border-radius: 50px;
-            border: 2px solid #8a2be2;
-        }
-        
-        .registration-animated-fun .btn {
-            border-radius: 50px;
-        }
-        
-        .registration-nature-inspired {
-            font-family: 'Verdana', sans-serif;
-            background-color: rgba(39, 75, 43, 0.85);
-            color: white;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            padding: 25px;
         }
         
-        .registration-nature-inspired .form-control,
-        .registration-nature-inspired .form-select {
-            background-color: transparent;
-            border: none;
-            border-bottom: 1px solid rgba(255,255,255,0.3);
-            border-radius: 0;
+        .event-sidebar-item {
+            margin-bottom: 25px;
+        }
+        
+        .event-sidebar-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .event-sidebar-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 5px 12px;
+            background-color: #e9ecef;
+            border-radius: 50px;
+            font-size: 0.85rem;
+        }
+        
+        /* Social share */
+        .social-share {
+            display: flex;
+        }
+        
+        /* Resource Badges */
+        .resource-badge {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 50px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .resource-badge i {
+            margin-right: 5px;
+        }
+        
+        /* Flex utilities */
+        .d-flex {
+            display: flex;
+        }
+        
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+        
+        .gap-2 {
+            gap: 10px;
+        }
+        
+        .justify-content-center {
+            justify-content: center;
+        }
+        
+        .justify-content-between {
+            justify-content: space-between;
+        }
+        
+        .align-items-center {
+            align-items: center;
+        }
+        
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            padding: 50px 0 30px;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
             color: white;
         }
         
-        .registration-nature-inspired .form-control::placeholder {
-            color: rgba(255,255,255,0.6);
+        /* Theme specific styles */
+        /* Tech Theme */
+        .theme-tech body {
+            background-color: #101729;
+            color: #00bfff;
+            font-family: 'Roboto', sans-serif;
         }
         
-        .registration-futuristic-tech {
-            font-family: 'Roboto', sans-serif;
+        .theme-tech .card {
             background-color: rgba(16, 23, 41, 0.9);
-            color: #00bfff;
             border: 1px solid #00bfff;
             box-shadow: 0 0 20px rgba(0,191,255,0.2);
         }
         
-        .registration-futuristic-tech h3 {
-            text-transform: uppercase;
-            letter-spacing: 2px;
+        .theme-tech .event-sidebar {
+            background-color: rgba(16, 23, 41, 0.9);
+            border: 1px solid #00bfff;
+            box-shadow: 0 0 20px rgba(0,191,255,0.2);
         }
         
-        .registration-futuristic-tech .form-control,
-        .registration-futuristic-tech .form-select {
-            background-color: transparent;
-            border-color: #00bfff;
-            color: #00bfff;
+        /* Creative Theme */
+        .theme-creative body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #fafafa;
+            background-image: url('/static/theme_assets/creative/creative_theme_background.gif');
+            background-size: cover;
+            background-attachment: fixed;
         }
         
-        .registration-futuristic-tech .form-control::placeholder {
-            color: rgba(0,191,255,0.6);
+        .theme-creative .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: none;
         }
         
-        .registration-artistic-handdrawn {
-            font-family: 'Comic Neue', cursive;
-            background-color: rgba(255,255,255,0.9);
-            border-radius: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        .theme-creative .event-sidebar {
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: none;
         }
         
-        .registration-artistic-handdrawn .form-control,
-        .registration-artistic-handdrawn .form-select {
-            border: 2px solid #6c757d;
+        .theme-creative .btn-primary {
+            background: linear-gradient(45deg, #ff7eb3, #ff758c);
+            box-shadow: 0 4px 15px rgba(255, 117, 140, 0.4);
         }
         
-        .registration-retro-vintage {
+        /* Retro Theme */
+        .theme-retro body {
             font-family: 'Courier New', monospace;
-            background-color: rgba(248, 232, 201, 0.9);
-            color: #5f4b32;
+            background-color: #f8e8c9;
+            background-image: url('/static/theme_assets/retro/retro_background.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        
+        .theme-retro .card {
             border: 3px solid #5f4b32;
             border-radius: 0;
             box-shadow: 5px 5px 0px #5f4b32;
         }
         
-        .registration-retro-vintage h3 {
-            font-family: 'Monoton', cursive;
-            letter-spacing: 2px;
+        .theme-retro .event-sidebar {
+            border: 3px solid #5f4b32;
+            border-radius: 0;
+            box-shadow: 5px 5px 0px #5f4b32;
         }
         
-        .registration-retro-vintage .form-control,
-        .registration-retro-vintage .form-select {
-            background-color: transparent;
+        .theme-retro h1, .theme-retro h2, .theme-retro h3 {
+            font-family: 'Monoton', cursive;
+            letter-spacing: 2px;
+            color: #5f4b32;
+        }
+        
+        .theme-retro .btn-primary {
+            background-color: #5f4b32;
             border: 2px solid #5f4b32;
             border-radius: 0;
+            box-shadow: 2px 2px 0 #000;
+        }
+        
+        /* Elegant Theme */
+        .theme-elegant body {
+            font-family: 'Georgia', serif;
+            background-color: #fcfcfc;
+            color: #1a365d;
+        }
+        
+        .theme-elegant .card {
+            border: 1px solid #dee2e6;
+            border-radius: 0;
+        }
+        
+        .theme-elegant .event-sidebar {
+            border: 1px solid #dee2e6;
+            border-radius: 0;
+        }
+        
+        .theme-elegant h1, .theme-elegant h2, .theme-elegant h3 {
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 10px;
+        }
+        
+        .theme-elegant .btn-primary {
+            background-color: #1a365d;
+            border-color: #1a365d;
+            border-radius: 0;
+        }
+        
+        /* Minimalist Theme */
+        .theme-minimalist body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #ffffff;
+            color: #333;
+        }
+        
+        .theme-minimalist .card {
+            border-radius: 5px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .theme-minimalist .event-sidebar {
+            border-radius: 5px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .theme-minimalist h1, .theme-minimalist h2, .theme-minimalist h3 {
+            font-weight: 300;
+        }
+        
+        .theme-minimalist .btn-primary {
+            background-color: #333;
+            border-color: #333;
+            border-radius: 0;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 992px) {
+            .col-lg-8, .col-lg-4, .col-lg-10 {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .event-cover {
+                height: 400px;
+            }
+            
+            .event-meta {
+                flex-direction: column;
+            }
+            
+            .col-md-6 {
+                width: 100%;
+            }
+            
+            .navbar-nav {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                padding: 20px 0;
+            }
+            
+            .navbar-container {
+                flex-direction: column;
+            }
+            
+            .navbar-brand {
+                margin-bottom: 10px;
+            }
+            
+            .navbar-toggler {
+                display: block;
+                position: absolute;
+                top: 20px;
+                right: 20px;
+            }
         }
     </style>
 </head>
-<body>
+<body class="theme-{{ theme }}">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand" href="/">CEMS</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/events">Events</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
-                    {% if session.get('user_id') %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                My Account
-                            </a>
-                            <ul class="dropdown-menu">
-                                {% if session.get('user_role') == 'participant' %}
-                                    <li><a class="dropdown-item" href="/participant/dashboard">Dashboard</a></li>
-                                {% elif session.get('user_role') == 'organiser' %}
-                                    <li><a class="dropdown-item" href="/organiser/dashboard">Dashboard</a></li>
-                                {% elif session.get('user_role') == 'admin' %}
-                                    <li><a class="dropdown-item" href="/admin/dashboard">Dashboard</a></li>
-                                {% endif %}
-                                <li><a class="dropdown-item" href="/profile">Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="/logout">Logout</a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
-                        <li class="nav-item"><a class="nav-link btn btn-light text-primary ms-2" href="/signup">Sign Up</a></li>
-                    {% endif %}
-                </ul>
-            </div>
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="/" class="navbar-brand">CEMS</a>
+            <button class="navbar-toggler" id="navbarToggler">☰</button>
+            <ul class="navbar-nav" id="navbarNav">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/events">Events</a></li>
+                <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                {% if session.get('user_id') %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button">
+                            My Account
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if session.get('user_role') == 'participant' %}
+                                <li><a class="dropdown-item" href="/participant/dashboard">Dashboard</a></li>
+                            {% elif session.get('user_role') == 'organiser' %}
+                                <li><a class="dropdown-item" href="/organiser/dashboard">Dashboard</a></li>
+                            {% elif session.get('user_role') == 'admin' %}
+                                <li><a class="dropdown-item" href="/admin/dashboard">Dashboard</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item"><a class="nav-link btn btn-outline-light" href="/login">Login</a></li>
+                    <li class="nav-item"><a class="nav-link btn btn-light" href="/signup">Sign Up</a></li>
+                {% endif %}
+            </ul>
         </div>
     </nav>
 
     <!-- Event Cover -->
-    <div class="event-cover" style="background-image: url('/{{ event.cover_image or 'static/images/default-cover.jpg' }}');">
+    <div class="event-cover" style="background-image: url('/{{ event.cover_image or 'static/uploads/images/default-cover.jpg' }}');">
         <div class="container event-cover-content">
             <div>
                 {% if event.is_featured %}
@@ -408,11 +925,6 @@
                             {% endif %}
                         </div>
                     </div>
-                    
-                    {% set custom_data = {} %}
-                    {% if event.custom_data %}
-                        {% set custom_data = event.custom_data | tojson | fromjson %}
-                    {% endif %}
                     
                     <div class="event-meta-item">
                         <div class="event-meta-icon">
@@ -478,11 +990,6 @@
                         <div class="card-body">
                             <h3 class="card-title mb-4">Venue Information</h3>
                             
-                            {% set custom_data = {} %}
-                            {% if event.custom_data %}
-                                {% set custom_data = event.custom_data | tojson | fromjson %}
-                            {% endif %}
-                            
                             {% if custom_data.venue_data %}
                                 <div class="mb-3">
                                     <h5>{{ custom_data.venue_data.name }}</h5>
@@ -493,7 +1000,7 @@
                                 </div>
                                 
                                 {% if custom_data.venue_data.coordinates and custom_data.venue_data.coordinates.lat and custom_data.venue_data.coordinates.lng %}
-                                    <div id="venue-map" style="height: 300px; width: 100%; border-radius: 8px;"></div>
+                                    <div id="venue-map"></div>
                                 {% endif %}
                             {% else %}
                                 <p><i class="fas fa-map-marker-alt me-2"></i> {{ event.venue }}</p>
@@ -509,7 +1016,7 @@
                                 <div class="row">
                                     {% for sub_event in sub_events %}
                                         <div class="col-md-6">
-                                            <div class="sub-event-card card">
+                                            <div class="card sub-event-card">
                                                 <div class="card-body">
                                                     <h5 class="card-title">{{ sub_event.name }}</h5>
                                                     <p class="card-text">{{ sub_event.description | truncate(80) }}</p>
@@ -522,7 +1029,7 @@
                                                                 {{ sub_event.date }}
                                                             {% endif %}
                                                         </small>
-                                                        <a href="/event/{{ sub_event.id }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                                        <a href="{{ url_for('event.event_detail', event_id=sub_event.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -571,11 +1078,6 @@
                                 <!-- Resource Allocation -->
                                 <div class="mb-4">
                                     <h5>Resource Allocation</h5>
-                                    
-                                    {% set custom_data = {} %}
-                                    {% if event.custom_data %}
-                                        {% set custom_data = event.custom_data | tojson | fromjson %}
-                                    {% endif %}
                                     
                                     {% if custom_data.resources_required %}
                                         <div class="mt-3">
@@ -653,7 +1155,7 @@
                                 <span>{{ event.seats_available }} / {{ event.seats_total }}</span>
                             </div>
                             
-                            <div class="progress mb-3" style="height: 10px;">
+                            <div class="progress mb-3">
                                 {% set percent = (event.seats_total - event.seats_available) / event.seats_total * 100 %}
                                 <div class="progress-bar {% if percent > 80 %}bg-danger{% elif percent > 60 %}bg-warning{% else %}bg-success{% endif %}" 
                                      role="progressbar" style="width: {{ percent }}%"></div>
@@ -672,11 +1174,9 @@
                             {% else %}
                                 {% if status != "closed" %}
                                     {% if session.get('user_id') %}
-                                        <form action="/register-event/{{ event.id }}" method="POST">
-                                            <button type="submit" class="btn btn-primary w-100">
-                                                <i class="fas fa-ticket-alt me-2"></i> Register Now
-                                            </button>
-                                        </form>
+                                        <a href="{{ url_for('event.register_form', event_id=event.id, theme=theme) }}" class="btn btn-primary w-100">
+                                            <i class="fas fa-ticket-alt me-2"></i> Register Now
+                                        </a>
                                     {% else %}
                                          <a href="{{ url_for('auth.login', next='/event/' + event.id|string) }}" class="btn btn-primary w-100">
                                             <i class="fas fa-sign-in-alt me-2"></i> Login to Register
@@ -726,7 +1226,7 @@
                             <div class="event-sidebar-item">
                                 <h5 class="event-sidebar-title">Parent Event</h5>
                                 <div class="parent-event">
-                                    <a href="/event/{{ parent_event.id }}">{{ parent_event.name }}</a>
+                                    <a href="{{ url_for('event.event_detail', event_id=parent_event.id) }}">{{ parent_event.name }}</a>
                                     <div class="small text-muted mt-1">{{ parent_event.start_date.strftime('%b %d, %Y') if parent_event.start_date else parent_event.date }}</div>
                                 </div>
                             </div>
@@ -738,13 +1238,13 @@
                                 <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" target="_blank" class="btn btn-outline-primary me-2">
                                     <i class="fab fa-facebook-f"></i>
                                 </a>
-                                <a href="https://twitter.com/intent/tweet?url={{ request.url }}&text={{ event.name }}" target="_blank" class="btn btn-outline-info me-2">
+                                <a href="https://twitter.com/intent/tweet?url={{ request.url }}&text={{ event.name }}" target="_blank" class="btn btn-outline-primary me-2">
                                     <i class="fab fa-twitter"></i>
                                 </a>
-                                <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.url }}" target="_blank" class="btn btn-outline-secondary me-2">
+                                <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.url }}" target="_blank" class="btn btn-outline-primary me-2">
                                     <i class="fab fa-linkedin-in"></i>
                                 </a>
-                                <a href="mailto:?subject={{ event.name }}&body=Check out this event: {{ request.url }}" class="btn btn-outline-danger">
+                                <a href="mailto:?subject={{ event.name }}&body=Check out this event: {{ request.url }}" class="btn btn-outline-primary">
                                     <i class="fas fa-envelope"></i>
                                 </a>
                             </div>
@@ -752,24 +1252,13 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Registration Form (Customized based on theme) -->
-            {% if not is_registered and status != "closed" and not session.get('user_id') %}
-                {% set theme = registration_theme if registration_theme else "minimalist" %}
-                
-                <div class="row mt-5">
-                    <div class="col-lg-10 mx-auto">
-                        {% include 'registration_themes/' + theme + '.html' %}
-                    </div>
-                </div>
-            {% endif %}
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="py-4">
+    <footer>
         <div class="container">
-            <div class="row g-4">
+            <div class="row">
                 <div class="col-md-4">
                     <h5>CEMS</h5>
                     <p>Organize, manage, and participate in college events with ease!</p>
@@ -799,7 +1288,65 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1jEJt9r2z1j1
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    {% if custom_data.venue_data and custom_data.venue_data.coordinates and custom_data.venue_data.coordinates.lat and custom_data.venue_data.coordinates.lng %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize map
+            const map = L.map('venue-map').setView(
+                [{{ custom_data.venue_data.coordinates.lat }}, {{ custom_data.venue_data.coordinates.lng }}], 
+                15
+            );
+            
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Add marker for venue
+            L.marker([{{ custom_data.venue_data.coordinates.lat }}, {{ custom_data.venue_data.coordinates.lng }}])
+                .addTo(map)
+                .bindPopup('{{ custom_data.venue_data.name | default(event.venue) }}')
+                .openPopup();
+        });
+    </script>
+    {% endif %}
+    
+    <script>
+        // Mobile Navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbarToggler = document.getElementById('navbarToggler');
+            const navbarNav = document.getElementById('navbarNav');
+            
+            if(navbarToggler) {
+                navbarToggler.addEventListener('click', function() {
+                    if (navbarNav.style.display === 'flex') {
+                        navbarNav.style.display = 'none';
+                    } else {
+                        navbarNav.style.display = 'flex';
+                    }
+                });
+            }
+            
+            // Dropdown functionality
+            const dropdownToggle = document.querySelector('.dropdown-toggle');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            if(dropdownToggle) {
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!e.target.matches('.dropdown-toggle') && dropdownMenu.classList.contains('show')) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

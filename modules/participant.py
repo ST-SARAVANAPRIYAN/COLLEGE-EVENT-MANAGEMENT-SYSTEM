@@ -13,7 +13,7 @@ def participant_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@participant_bp.route('/participant_dashboard')
+@participant_bp.route('/dashboard')  # Changed from '/participant_dashboard'
 @participant_required
 def dashboard():
     try:

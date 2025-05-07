@@ -447,24 +447,63 @@
                                     <option value="technical" {% if request.args.get('category') == 'technical' %}selected{% endif %}>Technical</option>
                                     <option value="sports" {% if request.args.get('category') == 'sports' %}selected{% endif %}>Sports</option>
                                     <option value="academic" {% if request.args.get('category') == 'academic' %}selected{% endif %}>Academic</option>
+                                    <option value="workshop" {% if request.args.get('category') == 'workshop' %}selected{% endif %}>Workshop</option>
+                                    <option value="seminar" {% if request.args.get('category') == 'seminar' %}selected{% endif %}>Seminar</option>
+                                    <option value="competition" {% if request.args.get('category') == 'competition' %}selected{% endif %}>Competition</option>
                                 </select>
                             </div>
                             
                             <div class="filter-group">
                                 <label class="filter-label">Date Range</label>
-                                <input type="date" id="date_from" name="date_from" class="form-control" value="{{ request.args.get('date_from', '') }}">
-                                <input type="date" id="date_to" name="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}">
+                                <input type="date" id="date_from" name="date_from" class="form-control" value="{{ request.args.get('date_from', '') }}" placeholder="From">
+                                <input type="date" id="date_to" name="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}" placeholder="To">
+                                
+                                <div style="margin-top: 10px;">
+                                    <div class="checkbox-label">
+                                        <input type="checkbox" id="today" name="date" value="today" class="checkbox-input" {% if request.args.get('date') == 'today' %}checked{% endif %}>
+                                        <label for="today">Today</label>
+                                    </div>
+                                    <div class="checkbox-label">
+                                        <input type="checkbox" id="tomorrow" name="date" value="tomorrow" class="checkbox-input" {% if request.args.get('date') == 'tomorrow' %}checked{% endif %}>
+                                        <label for="tomorrow">Tomorrow</label>
+                                    </div>
+                                    <div class="checkbox-label">
+                                        <input type="checkbox" id="weekend" name="date" value="weekend" class="checkbox-input" {% if request.args.get('date') == 'weekend' %}checked{% endif %}>
+                                        <label for="weekend">This Weekend</label>
+                                    </div>
+                                    <div class="checkbox-label">
+                                        <input type="checkbox" id="week" name="date" value="week" class="checkbox-input" {% if request.args.get('date') == 'week' %}checked{% endif %}>
+                                        <label for="week">This Week</label>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="filter-group">
                                 <label class="filter-label">Price</label>
                                 <div class="checkbox-label">
-                                    <input type="checkbox" id="free" name="free" class="checkbox-input" {% if request.args.get('free') %}checked{% endif %}>
+                                    <input type="checkbox" id="free" name="free" value="1" class="checkbox-input" {% if request.args.get('free') %}checked{% endif %}>
                                     <label for="free">Free Events</label>
+                                </div>
+                                <div class="checkbox-label">
+                                    <input type="checkbox" id="paid" name="paid" value="1" class="checkbox-input" {% if request.args.get('paid') %}checked{% endif %}>
+                                    <label for="paid">Paid Events</label>
+                                </div>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label">Status</label>
+                                <div class="checkbox-label">
+                                    <input type="checkbox" id="open" name="status" value="open" class="checkbox-input" {% if request.args.get('status') == 'open' %}checked{% endif %}>
+                                    <label for="open">Registration Open</label>
+                                </div>
+                                <div class="checkbox-label">
+                                    <input type="checkbox" id="closing-soon" name="status" value="closing-soon" class="checkbox-input" {% if request.args.get('status') == 'closing-soon' %}checked{% endif %}>
+                                    <label for="closing-soon">Closing Soon</label>
                                 </div>
                             </div>
                             
                             <button type="submit" class="btn btn-primary" style="width:100%;">Apply Filters</button>
+                            <a href="{{ url_for('events_list') }}" class="btn btn-outline-secondary mt-2" style="width:100%;">Clear Filters</a>
                         </form>
                     </div>
                 </div>
@@ -483,7 +522,7 @@
                                     {% endif %}
                                 </div>
                                 <div class="event-content">
-                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="event-title">{{ event.name }}</a>
+                                    <a href="{{ url_for('event.event_detail', event_id=event.id) }}" class="event-title">{{ event.name }}</a>
                                     <div class="event-info">
                                         <p><i>📅</i> 
                                         {% if event.start_date %}
@@ -494,12 +533,24 @@
                                             TBA
                                         {% endif %}
                                         {% if event.start_time %}at {{ event.start_time }}{% endif %}</p>
-                                        <p><i>📍</i> {{ event.venue if event.venue else 'TBA' }}</p>
+                                        
+                                        <p><i>📍</i> 
+                                        {% set custom_data = {} %}
+                                        {% if event.custom_data %}
+                                            {% set custom_data = event.custom_data | tojson | fromjson %}
+                                        {% endif %}
+                                        
+                                        {% if custom_data.venue_data and custom_data.venue_data.address %}
+                                            {{ custom_data.venue_data.address }}
+                                        {% else %}
+                                            {{ event.venue if event.venue else 'TBA' }}
+                                        {% endif %}
+                                        </p>
                                     </div>
                                     <p style="flex-grow:1; margin-bottom:20px;">{{ event.description[:80] }}{% if event.description and event.description|length > 80 %}...{% endif %}</p>
                                     <div class="event-footer">
                                         <span class="event-price">{% if not event.is_free and event.price > 0 %}₹{{ event.price }}{% else %}Free{% endif %}</span>
-                                        <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-primary">View Details</a>
+                                        <a href="{{ url_for('event.event_detail', event_id=event.id) }}" class="btn btn-primary">View Details</a>
                                     </div>
                                 </div>
                             </div>

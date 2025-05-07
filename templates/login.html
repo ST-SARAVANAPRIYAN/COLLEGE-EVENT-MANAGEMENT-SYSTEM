@@ -52,6 +52,8 @@
             display: flex;
             list-style: none;
             align-items: center;
+            padding: 0;
+            margin: 0;
         }
         
         .nav-item {
@@ -78,6 +80,7 @@
             font-weight: 500;
             text-decoration: none;
             transition: all 0.3s;
+            border: none;
         }
         
         .btn-light {
@@ -239,6 +242,57 @@
             padding: 12px;
             font-size: 16px;
         }
+        
+        /* Responsive styles for various screen sizes */
+        @media (max-width: 576px) {
+            .login-container {
+                max-width: 100%;
+                margin: 0 15px;
+                border-radius: 10px;
+            }
+            
+            .login-header {
+                padding: 20px;
+            }
+            
+            .login-body {
+                padding: 20px;
+            }
+            
+            main {
+                padding: 20px 0;
+            }
+            
+            .navbar-brand {
+                font-size: 22px;
+            }
+            
+            .nav-item {
+                margin-left: 10px;
+            }
+            
+            .nav-link {
+                padding: 6px 12px;
+            }
+        }
+        
+        @media (min-width: 577px) and (max-width: 768px) {
+            .login-container {
+                max-width: 500px;
+            }
+        }
+        
+        @media (min-width: 769px) and (max-width: 992px) {
+            .login-container {
+                max-width: 450px;
+            }
+        }
+        
+        @media (min-width: 993px) {
+            .login-container {
+                max-width: 450px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -256,7 +310,7 @@
     </header>
     
     <main>
-        <div class="container">
+        <div class="container" style="display: flex; justify-content: center; align-items: center;">
             <div class="login-container">
                 <div class="login-header">
                     <h2>Welcome Back</h2>

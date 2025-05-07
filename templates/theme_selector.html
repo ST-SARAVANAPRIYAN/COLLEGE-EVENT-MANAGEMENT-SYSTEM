@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Theme Selector | {{ event.name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Roboto:wght@300;400;500&family=Quicksand:wght@400;500;600&family=Comic+Neue:wght@400;700&family=Monoton&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            width: 92%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .page-header {
+            margin-top: 100px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .page-header h1 {
+            font-size: 36px;
+            color: #1a9be0;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            font-size: 18px;
+            color: #666;
+        }
+        
+        /* Theme card styles */
+        .themes-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .theme-card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .theme-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .theme-preview {
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .theme-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        
+        .theme-card:hover .theme-preview img {
+            transform: scale(1.05);
+        }
+        
+        .theme-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .theme-card:hover .theme-overlay {
+            opacity: 1;
+        }
+        
+        .theme-details {
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .theme-details h3 {
+            font-size: 22px;
+            margin-bottom: 10px;
+            color: #333;
+            text-transform: capitalize;
+        }
+        
+        .theme-details p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .theme-card.current-theme {
+            border: 3px solid #1a9be0;
+            position: relative;
+        }
+        
+        .current-theme-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #1a9be0;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        /* Button styles */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s;
+            text-align: center;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(26, 155, 224, 0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 155, 224, 0.3);
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid #1a9be0;
+            color: #1a9be0;
+            background: transparent;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: #1a9be0;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .w-100 {
+            width: 100%;
+        }
+        
+        .mt-3 {
+            margin-top: 15px;
+        }
+        
+        /* Theme specific previews */
+        .theme-tech .theme-preview {
+            background: linear-gradient(135deg, #0a1118, #1a3246);
+        }
+        
+        .theme-creative .theme-preview {
+            background: linear-gradient(135deg, #ff7eb3, #ff758c);
+        }
+        
+        .theme-retro .theme-preview {
+            background: linear-gradient(135deg, #f8e8c9, #dfc7a4);
+        }
+        
+        .theme-elegant .theme-preview {
+            background: linear-gradient(135deg, #1a365d, #4b749f);
+        }
+        
+        .theme-minimalist .theme-preview {
+            background: linear-gradient(135deg, #ffffff, #f0f0f0);
+            border: 1px solid #eee;
+        }
+        
+        /* Navigation link back to event */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #1a9be0;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .back-link i {
+            margin-right: 5px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, #1a9be0, #05c27b);
+            color: white;
+            padding: 50px 0 30px;
+            margin-top: 100px;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        /* Alert messages */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .alert-success {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+        
+        /* Theme characteristic tags */
+        .theme-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        
+        .theme-tag {
+            background-color: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 992px) {
+            .themes-container {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .themes-container {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .themes-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="/" class="navbar-brand">CEMS</a>
+            <button class="navbar-toggler" id="navbarToggler">☰</button>
+            <ul class="navbar-nav" id="navbarNav">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/events">Events</a></li>
+                <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                {% if session.get('user_id') %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button">
+                            My Account
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if session.get('user_role') == 'participant' %}
+                                <li><a class="dropdown-item" href="/participant/dashboard">Dashboard</a></li>
+                            {% elif session.get('user_role') == 'organiser' %}
+                                <li><a class="dropdown-item" href="/organiser/dashboard">Dashboard</a></li>
+                            {% elif session.get('user_role') == 'admin' %}
+                                <li><a class="dropdown-item" href="/admin/dashboard">Dashboard</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item"><a class="nav-link btn btn-outline-light" href="/login">Login</a></li>
+                    <li class="nav-item"><a class="nav-link btn btn-light" href="/signup">Sign Up</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <a href="{{ url_for('event.event_detail', event_id=event.id) }}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Event
+            </a>
+            <h1>Registration Theme Selector</h1>
+            <p>Choose a theme for the registration form for "{{ event.name }}"</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="themes-container">
+            {% for theme in themes %}
+                <div class="theme-card theme-{{ theme }} {% if theme == current_theme %}current-theme{% endif %}">
+                    {% if theme == current_theme %}
+                        <div class="current-theme-badge">Current Theme</div>
+                    {% endif %}
+                    
+                    <div class="theme-preview">
+                        <img src="{{ theme_assets_path }}{{ theme }}/{{ theme }}_background.jpg" alt="{{ theme }} theme preview">
+                        <div class="theme-overlay">
+                            <a href="{{ url_for('event.preview_registration_theme', theme=theme, event_name=event.name, event_description=event.description, is_preview='true') }}" target="_blank" class="btn btn-primary">Preview</a>
+                        </div>
+                    </div>
+                    
+                    <div class="theme-details">
+                        <h3>{{ theme }}</h3>
+                        <div class="theme-tags">
+                            {% if theme == 'tech' %}
+                                <span class="theme-tag">Modern</span>
+                                <span class="theme-tag">Digital</span>
+                                <span class="theme-tag">Futuristic</span>
+                            {% elif theme == 'creative' %}
+                                <span class="theme-tag">Artistic</span>
+                                <span class="theme-tag">Colorful</span>
+                                <span class="theme-tag">Playful</span>
+                            {% elif theme == 'retro' %}
+                                <span class="theme-tag">Vintage</span>
+                                <span class="theme-tag">Nostalgic</span>
+                                <span class="theme-tag">Bold</span>
+                            {% elif theme == 'elegant' %}
+                                <span class="theme-tag">Sophisticated</span>
+                                <span class="theme-tag">Refined</span>
+                                <span class="theme-tag">Professional</span>
+                            {% elif theme == 'minimalist' %}
+                                <span class="theme-tag">Clean</span>
+                                <span class="theme-tag">Simple</span>
+                                <span class="theme-tag">Modern</span>
+                            {% endif %}
+                        </div>
+                        <p>
+                            {% if theme == 'tech' %}
+                                A futuristic theme with neon accents, perfect for tech events and hackathons.
+                            {% elif theme == 'creative' %}
+                                A vibrant and playful design, ideal for creative workshops and artistic events.
+                            {% elif theme == 'retro' %}
+                                A nostalgic vintage style with classic elements, great for themed events.
+                            {% elif theme == 'elegant' %}
+                                Sophisticated and polished design for formal and professional events.
+                            {% elif theme == 'minimalist' %}
+                                Clean and simple design focusing on essential content.
+                            {% endif %}
+                        </p>
+                        
+                        {% if is_organiser %}
+                            {% if theme == current_theme %}
+                                <button class="btn btn-secondary w-100" disabled>Current Theme</button>
+                            {% else %}
+                                <form action="{{ url_for('event.update_event_theme', event_id=event.id, theme=theme) }}" method="POST">
+                                    <button type="submit" class="btn btn-primary w-100">Select This Theme</button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <a href="{{ url_for('event.register_form', event_id=event.id, theme=theme) }}" class="btn btn-outline-primary w-100">
+                                Register with this theme
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>CEMS</h5>
+                    <p>Organize, manage, and participate in college events with ease!</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/events">Events</a></li>
+                        <li><a href="/about">About</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Connect With Us</h5>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p>&copy; 2025 College Event Management System</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbarToggler = document.getElementById('navbarToggler');
+            const navbarNav = document.getElementById('navbarNav');
+            
+            if(navbarToggler) {
+                navbarToggler.addEventListener('click', function() {
+                    if (navbarNav.style.display === 'flex') {
+                        navbarNav.style.display = 'none';
+                    } else {
+                        navbarNav.style.display = 'flex';
+                    }
+                });
+            }
+            
+            // Dropdown functionality
+            const dropdownToggle = document.querySelector('.dropdown-toggle');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            if(dropdownToggle) {
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!e.target.matches('.dropdown-toggle') && dropdownMenu.classList.contains('show')) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
