@@ -5,11 +5,15 @@ import os
 import shutil
 import zipfile
 import uuid
+import traceback
+import random
+import string
 from werkzeug.utils import secure_filename
 import json
 from datetime import datetime, timedelta
 
-event_bp = Blueprint('event', 'event')
+# Fixing the URL prefix to ensure proper routing
+event_bp = Blueprint('event', __name__, url_prefix='/event')
 
 # Directory for event exploration pages - keeping this for backward compatibility but not creating new directories
 EVENT_EXPLORATIONS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'event_explorations')
@@ -253,217 +257,192 @@ CEMS Team"""
 @event_bp.route('/api/events/create', methods=['POST'])
 def create_event():
     try:
-        if session.get('user_role') not in ['organiser', 'admin']:
-            return jsonify({'error': 'Unauthorized'}), 403
+            print(f"\n\n--- EVENT CREATION START ---")
+            print(f"User session: user_id={session.get('user_id')}, role={session.get('user_role')}")
             
-        data = request.form
-        
-        # Required fields
-        name = data.get('name')
-        description = data.get('description')
-        category = data.get('category')
-        
-        # Handle dates and times
-        start_date = data.get('start_date')
-        start_time = data.get('start_time', '00:00')
-        end_date = data.get('end_date')
-        end_time = data.get('end_time', '23:59')
-        
-        # Legacy date support for backwards compatibility
-        date = data.get('date', start_date)
-        
-        # Handle price/fee
-        price = 0
-        is_free = data.get('is_free') == 'on'
-        if not is_free and data.get('price'):
-            try:
-                price = float(data.get('price', 0))
-            except ValueError:
-                price = 0
-        
-        # Handle tags (comma-separated)
-        tags = data.get('tags', '')
-        tag = data.get('tag', category)  # For backwards compatibility
-        
-        # Registration deadline 
-        registration_end_date = data.get('registration_end_date')
-        
-        # Venue information - updated structure
-        venue_name = data.get('venue_name')
-        venue_address = data.get('venue_address')
-        venue_lat = data.get('venue_lat')
-        venue_lng = data.get('venue_lng')
-        
-        # Create structured venue data
-        venue_data = {
-            "name": venue_name,
-            "address": venue_address,
-            "coordinates": {
-                "lat": venue_lat,
-                "lng": venue_lng
-            }
-        }
-        
-        # Combine venue name and address for legacy support
-        venue = f"{venue_name}, {venue_address}" if venue_name and venue_address else data.get('venue')
-        
-        # Seating
-        seats_total = int(data.get('seats_total', 50))
-        
-        # Registration theme
-        registration_theme = data.get('registration_theme', 'minimalistic-elegant')
-        
-        # Optional parent event
-        parent_id = data.get('parent_event_id')
-        if parent_id and parent_id != '':
-            parent_id = int(parent_id)
-            # Check if parent exists
-            parent = Event.query.get(parent_id)
-            if not parent:
-                return jsonify({'error': 'Parent event not found'}), 404
-        else:
-            parent_id = None
-        
-        # Process resource requirements
-        resources_required = {
-            "projectors": int(data.get('req_projectors', 0)),
-            "sound": int(data.get('req_sound', 0)),
-            "chairs": int(data.get('req_chairs', 0)),
-            "tables": int(data.get('req_tables', 0)),
-            "lights": int(data.get('req_lights', 0)),
-            "volunteers": int(data.get('req_volunteers', 0))
-        }
+            if session.get('user_role') not in ['organiser', 'admin']:
+                print(f"Unauthorized: user role is {session.get('user_role')}")
+                return jsonify({'error': 'Unauthorized'}), 403
                 
-        # Create new event
-        new_event = Event(
-            name=name,
-            date=date,
-            start_date=datetime.strptime(start_date, '%Y-%m-%d') if start_date else None,
-            end_date=datetime.strptime(end_date, '%Y-%m-%d') if end_date else None,
-            start_time=start_time,
-            end_time=end_time,
-            description=description,
-            tag=tag,
-            category=category,
-            venue=venue,
-            tags=tags,
-            price=price,
-            is_free=is_free,
-            seats_total=seats_total,
-            seats_available=seats_total,
-            registration_end_date=datetime.strptime(registration_end_date, '%Y-%m-%d') if registration_end_date else None,
-            is_featured=data.get('is_featured') == 'on',
-            parent_event_id=parent_id,
-            created_by=session.get('user_id'),
-            organiser_id=session.get('user_id'),
-            custom_data=json.dumps({
-                "registration_theme": registration_theme,
-                "resources_required": resources_required,
-                "venue_data": venue_data
-            })
-        )
-        
-        # Handle image upload
-        if 'image' in request.files and request.files['image'].filename:
-            # Save the image file
-            image_file = request.files['image']
-            filename = secure_filename(image_file.filename)
-            file_path = os.path.join('static/uploads/images', filename)
-            image_file.save(file_path)
-            new_event.image = file_path
-        
-        # Handle cover image upload
-        if 'cover_image' in request.files and request.files['cover_image'].filename:
-            cover_file = request.files['cover_image']
-            filename = secure_filename(cover_file.filename)
-            file_path = os.path.join('static/uploads/images', filename)
-            cover_file.save(file_path)
-            new_event.cover_image = file_path
+            data = request.form
+            print(f"Received form data keys: {data.keys()}")
             
-        # Handle other uploads (video, brochure)
-        if 'video' in request.files and request.files['video'].filename:
-            video_file = request.files['video']
-            filename = secure_filename(video_file.filename)
-            file_path = os.path.join('static/uploads/videos', filename)
-            video_file.save(file_path)
-            new_event.video = file_path
+            # Required fields
+            name = data.get('name')
+            description = data.get('description')
+            category = data.get('category')
+            print(f"Creating event: {name}, category: {category}")
             
-        if 'brochure' in request.files and request.files['brochure'].filename:
-            brochure_file = request.files['brochure']
-            filename = secure_filename(brochure_file.filename)
-            file_path = os.path.join('static/uploads/brochures', filename)
-            brochure_file.save(file_path)
-            new_event.brochure = file_path
+            # Handle dates and times
+            start_date = data.get('start_date')
+            start_time = data.get('start_time', '00:00')
+            end_date = data.get('end_date')
+            end_time = data.get('end_time', '23:59')
             
-        # Process sub-events if any
-        sub_events_data = {}
-        for key in data.keys():
-            if key.startswith('sub_events['):
-                # Extract sub event index and field name from key format: sub_events[0][name]
-                parts = key.replace('sub_events[', '').replace(']', '').split('[')
-                if len(parts) == 2:
-                    idx, field = parts
-                    if idx not in sub_events_data:
-                        sub_events_data[idx] = {}
-                    sub_events_data[idx][field] = data.get(key)
-        
-        # Add to events list
-        db.session.add(new_event)
-        db.session.commit()
-        
-        # Create sub-events after main event is created
-        for idx, sub_event_data in sub_events_data.items():
-            # Create sub-event with same venue information as parent
-            sub_event = Event(
-                name=sub_event_data.get('name'),
-                description=sub_event_data.get('description', ''),
-                date=date,  # Use parent date as fallback
-                start_date=datetime.strptime(sub_event_data.get('start_date', start_date), '%Y-%m-%d'),
-                end_date=datetime.strptime(sub_event_data.get('end_date', end_date), '%Y-%m-%d'),
-                start_time=sub_event_data.get('start_time', start_time),
-                end_time=sub_event_data.get('end_time', end_time),
-                category=sub_event_data.get('category', category),
-                tag=sub_event_data.get('category', category),  # Default tag to category
-                venue=venue,  # Use parent venue
-                price=float(sub_event_data.get('price', 0)) if sub_event_data.get('is_free') != 'on' else 0,
-                is_free=sub_event_data.get('is_free') == 'on',
-                seats_total=int(sub_event_data.get('seats_total', 50)),
-                seats_available=int(sub_event_data.get('seats_total', 50)),
+            # Legacy date support for backwards compatibility
+            date = data.get('date', start_date)
+            
+            # Handle price/fee
+            price = 0
+            is_free = data.get('is_free') == 'on'
+            if not is_free and data.get('price'):
+                try:
+                    price = float(data.get('price', 0))
+                except ValueError:
+                    price = 0
+            
+            # Handle tags (comma-separated)
+            tags = data.get('tags', '')
+            tag = data.get('tag', category)  # For backwards compatibility
+            
+            # Registration deadline 
+            registration_end_date = data.get('registration_end_date')
+            
+            # Venue information - updated structure
+            venue_name = data.get('venue_name')
+            venue_address = data.get('venue_address')
+            venue_lat = data.get('venue_lat')
+            venue_lng = data.get('venue_lng')
+            
+            # Create structured venue data
+            venue_data = {
+                "name": venue_name,
+                "address": venue_address,
+                "coordinates": {
+                    "lat": venue_lat,
+                    "lng": venue_lng
+                }
+            }
+            
+            # Combine venue name and address for legacy support
+            venue = f"{venue_name}, {venue_address}" if venue_name and venue_address else data.get('venue')
+            
+            # Seating
+            seats_total = int(data.get('seats_total', 50))
+            
+            # Registration theme
+            registration_theme = data.get('registration_theme', 'minimalistic-elegant')
+            
+            # Optional parent event
+            parent_id = data.get('parent_event_id')
+            if parent_id and parent_id != '':
+                parent_id = int(parent_id)
+                # Check if parent exists
+                parent = Event.query.get(parent_id)
+                if not parent:
+                    return jsonify({'error': 'Parent event not found'}), 404
+            else:
+                parent_id = None
+            
+            # Process resource requirements
+            resources_required = {
+                "projectors": int(data.get('req_projectors', 0)),
+                "sound": int(data.get('req_sound', 0)),
+                "chairs": int(data.get('req_chairs', 0)),
+                "tables": int(data.get('req_tables', 0)),
+                "lights": int(data.get('req_lights', 0)),
+                "volunteers": int(data.get('req_volunteers', 0))
+            }
+                    
+            # Create new event
+            new_event = Event(
+                name=name,
+                date=date,
+                start_date=datetime.strptime(start_date, '%Y-%m-%d') if start_date else None,
+                end_date=datetime.strptime(end_date, '%Y-%m-%d') if end_date else None,
+                start_time=start_time,
+                end_time=end_time,
+                description=description,
+                tag=tag,
+                category=category,
+                venue=venue,
+                tags=tags,
+                price=price,
+                is_free=is_free,
+                seats_total=seats_total,
+                seats_available=seats_total,
                 registration_end_date=datetime.strptime(registration_end_date, '%Y-%m-%d') if registration_end_date else None,
-                parent_event_id=new_event.id,
+                is_featured=data.get('is_featured') == 'on',
+                parent_event_id=parent_id,
                 created_by=session.get('user_id'),
                 organiser_id=session.get('user_id'),
                 custom_data=json.dumps({
                     "registration_theme": registration_theme,
-                    "resources_required": {},  # Sub-events share resources with parent
-                    "venue_data": venue_data  # Same venue data as parent
+                    "resources_required": resources_required,
+                    "venue_data": venue_data
                 })
             )
+            # Create upload directories if they don't exist
+            os.makedirs(os.path.join('static/uploads/images'), exist_ok=True)
+            os.makedirs(os.path.join('static/uploads/videos'), exist_ok=True)
+            os.makedirs(os.path.join('static/uploads/brochures'), exist_ok=True)
             
-            db.session.add(sub_event)
-        
-        # Commit all sub-events
-        db.session.commit()
-        
-        # If this is a sub-event, update parent
-        if parent_id:
-            parent = Event.query.get(parent_id)
-            if parent:
-                parent.sub_events.append(new_event)
-                db.session.commit()
+            # Handle image upload
+            if 'image' in request.files and request.files['image'].filename:
+                # Save the image file
+                image_file = request.files['image']
+                filename = secure_filename(image_file.filename)
+                file_path = os.path.join('static/uploads/images', filename)
+                image_file.save(file_path)
+                new_event.image = file_path
+            
+            # Handle cover image upload
+            if 'cover_image' in request.files and request.files['cover_image'].filename:
+                cover_file = request.files['cover_image']
+                filename = secure_filename(cover_file.filename)
+                file_path = os.path.join('static/uploads/images', filename)
+                cover_file.save(file_path)
+                new_event.cover_image = file_path
                 
-        # Notify users about new event
-        for user in User.query.filter_by(role='participant').all():
-            send_email(
-                user.email,
-                f"New Event: {new_event.name}",
-                f"Hi {user.name},\n\nWe're excited to announce a new event: {new_event.name} on {start_date} at {start_time}.\n\nDescription: {new_event.description}\n\nRegister now on the CEMS portal!\n\nRegards,\nCEMS Team"
-            )
-        
-        return jsonify({'success': True, 'event_id': new_event.id})
-        
+            # Handle other uploads (video, brochure)
+            if 'video' in request.files and request.files['video'].filename:
+                video_file = request.files['video']
+                filename = secure_filename(video_file.filename)
+                file_path = os.path.join('static/uploads/videos', filename)
+                video_file.save(file_path)
+                new_event.video = file_path
+                
+            if 'brochure' in request.files and request.files['brochure'].filename:
+                brochure_file = request.files['brochure']
+                filename = secure_filename(brochure_file.filename)
+                file_path = os.path.join('static/uploads/brochures', filename)
+                brochure_file.save(file_path)
+                new_event.brochure = file_path
+                
+            # Process sub-events if any
+            sub_events_data = {}
+            for key in data.keys():
+                if key.startswith('sub_events['):
+                    # Extract sub event index and field name from key format: sub_events[0][name]
+                    parts = key.replace('sub_events[', '').replace(']', '').split('[')
+                    if len(parts) == 2:
+                        idx, field = parts
+                        if idx not in sub_events_data:
+                            sub_events_data[idx] = {}
+                        sub_events_data[idx][field] = data.get(key)
+            
+            # Add to events list
+            db.session.add(new_event)
+            db.session.commit()
+            
+            # Create sub-events after main event is created
+            for idx, sub_event_data in sub_events_data.items():
+                # Create sub-event with same parent
+                sub_event = Event(
+                    name=sub_event_data.get('name'),
+                    description=sub_event_data.get('description'),
+                    category=category,
+                    parent_event_id=new_event.id,
+                    created_by=session.get('user_id'),
+                    organiser_id=session.get('user_id')
+                )
+                db.session.add(sub_event)
+            
+            db.session.commit()
+            return jsonify({'success': True, 'event_id': new_event.id})
+            
     except Exception as e:
-        import traceback
+        print(f"Error creating event: {str(e)}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -569,7 +548,7 @@ def get_upload_path(folder):
 
 # Removing the duplicate '/events' route that conflicts with app.py
 
-@event_bp.route('/event/<int:event_id>')
+@event_bp.route('/<int:event_id>')
 def event_detail(event_id):
     try:
         event = Event.query.get_or_404(event_id)
@@ -888,9 +867,7 @@ def preview_registration_theme(theme):
         }
 
         # Load the requested theme template
-        theme_template = f'registration_themes/{theme}.html'
-
-        # Render the theme with sample data and additional context
+        theme_template = f'registration_themes/{theme}.html'        # Render the theme with sample data and additional context
         return render_template(theme_template, **context)
     except Exception as e:
         import traceback

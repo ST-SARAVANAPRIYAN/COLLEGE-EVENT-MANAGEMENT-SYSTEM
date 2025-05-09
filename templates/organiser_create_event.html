@@ -588,6 +588,7 @@
 <script>
     let map, marker;
     let defaultLatLng = [13.0827, 80.2707]; // Chennai as default
+    let subEventCounter = 0;
     
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize the map
@@ -729,7 +730,449 @@
         });
     }
     
-    // Rest of the map and form handling functions
+    // Add sub-event function
+    function addSubEvent() {
+        const subEventsContainer = document.getElementById('subEventsContainer');
+        const subEventId = `subEvent${subEventCounter}`;
+        
+        // Create sub-event card
+        const subEventCard = document.createElement('div');
+        subEventCard.className = 'sub-event-card';
+        subEventCard.id = subEventId;
+        
+        // Create remove button
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'remove-sub-event';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.addEventListener('click', function() {
+            document.getElementById(subEventId).remove();
+        });
+        
+        // Create form fields for the sub-event
+        subEventCard.innerHTML = `
+            ${removeBtn.outerHTML}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Sub-event Name*</label>
+                    <input type="text" class="form-control" name="sub_event_name[]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Date*</label>
+                    <input type="date" class="form-control" name="sub_event_date[]" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Start Time</label>
+                    <input type="time" class="form-control" name="sub_event_start_time[]">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">End Time</label>
+                    <input type="time" class="form-control" name="sub_event_end_time[]">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" name="sub_event_description[]" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Venue</label>
+                <input type="text" class="form-control" name="sub_event_venue[]" placeholder="Same as main event if left blank">
+            </div>
+
+            <!-- Enhanced Registration Theme Selection with theme cards for sub-event -->
+            <div class="mb-3">
+                <label class="form-label">Registration Theme</label>
+                <p class="text-muted">Choose a visually appealing theme for this sub-event registration page</p>
+                
+                <input type="hidden" class="sub-event-theme-input" name="sub_event_theme[]" value="minimalist">
+                
+                <div class="sub-event-themes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 15px; padding: 8px; background-color: rgba(0,0,0,0.02); border-radius: 8px;">
+                    <div class="sub-event-theme-card theme-minimalist selected" data-theme="minimalist" data-sub-event-id="${subEventId}" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; position: relative; height: 80px; border: 2px solid #3e64ff; background: linear-gradient(to right, #f8f9fa, #ffffff);">
+                        <button type="button" class="theme-preview-btn position-absolute" style="top: 5px; right: 5px; background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" onclick="previewSubEventTheme('minimalist', '${subEventId}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px;">Minimalist</div>
+                    </div>
+                    
+                    <div class="sub-event-theme-card theme-tech" data-theme="tech" data-sub-event-id="${subEventId}" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; position: relative; height: 80px; border: 2px solid transparent; background-color: #0c0e13; background-image: url('/static/theme_assets/tech/tech_background.jpg'); background-size: cover;">
+                        <button type="button" class="theme-preview-btn position-absolute" style="top: 5px; right: 5px; background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" onclick="previewSubEventTheme('tech', '${subEventId}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px;">Tech</div>
+                    </div>
+                    
+                    <div class="sub-event-theme-card theme-creative" data-theme="creative" data-sub-event-id="${subEventId}" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; position: relative; height: 80px; border: 2px solid transparent; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); background-image: url('/static/theme_assets/creative/creative_theme_background.gif'); background-size: cover;">
+                        <button type="button" class="theme-preview-btn position-absolute" style="top: 5px; right: 5px; background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" onclick="previewSubEventTheme('creative', '${subEventId}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px;">Creative</div>
+                    </div>
+                    
+                    <div class="sub-event-theme-card theme-elegant" data-theme="elegant" data-sub-event-id="${subEventId}" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; position: relative; height: 80px; border: 2px solid transparent; background: linear-gradient(to right, #000000, #434343);">
+                        <button type="button" class="theme-preview-btn position-absolute" style="top: 5px; right: 5px; background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" onclick="previewSubEventTheme('elegant', '${subEventId}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px;">Elegant</div>
+                    </div>
+                    
+                    <div class="sub-event-theme-card theme-retro" data-theme="retro" data-sub-event-id="${subEventId}" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; position: relative; height: 80px; border: 2px solid transparent; background-color: #f8e8c9; background-image: url('/static/theme_assets/retro/retro_background.jpg'); background-size: cover;">
+                        <button type="button" class="theme-preview-btn position-absolute" style="top: 5px; right: 5px; background: rgba(255,255,255,0.7); border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" onclick="previewSubEventTheme('retro', '${subEventId}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px;">Retro</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input inherit-parent-theme-check" type="checkbox" name="sub_event_inherit_parent_theme[]" value="true" checked id="inheritCheck${subEventId}">
+                <label class="form-check-label" for="inheritCheck${subEventId}">
+                    Use same theme as main event
+                </label>
+            </div>
+        `;
+        
+        // Append new sub-event to container
+        subEventsContainer.appendChild(subEventCard);
+        
+        // Set up theme card selection for this sub-event
+        setupSubEventThemeCards(subEventId);
+        
+        // Add event listeners for the theme inheritance checkbox
+        const inheritThemeCheckbox = subEventCard.querySelector('.inherit-parent-theme-check');
+        const themeCards = subEventCard.querySelectorAll('.sub-event-theme-card');
+        
+        inheritThemeCheckbox.addEventListener('change', function() {
+            // Enable/disable theme cards based on checkbox state
+            themeCards.forEach(card => {
+                card.style.opacity = this.checked ? '0.5' : '1';
+                card.style.pointerEvents = this.checked ? 'none' : 'auto';
+            });
+            
+            // If inherit is checked, get the main event's selected theme and apply it to this sub-event
+            if (this.checked) {
+                const mainEventTheme = document.getElementById('registrationThemeInput').value;
+                subEventCard.querySelector('.sub-event-theme-input').value = mainEventTheme;
+                
+                // Update visual selection to match main event theme
+                themeCards.forEach(card => {
+                    card.style.border = '2px solid transparent';
+                    if (card.getAttribute('data-theme') === mainEventTheme) {
+                        card.style.border = '2px solid #3e64ff';
+                    }
+                });
+            }
+        });
+        
+        // Initially set opacity if inherit is checked
+        if (inheritThemeCheckbox.checked) {
+            themeCards.forEach(card => {
+                card.style.opacity = '0.5';
+                card.style.pointerEvents = 'none';
+            });
+        }
+        
+        // Increment counter for next sub-event
+        subEventCounter++;
+    }
+    
+    // Helper function to set up theme card selection for a specific sub-event
+    function setupSubEventThemeCards(subEventId) {
+        const subEventCard = document.getElementById(subEventId);
+        const themeCards = subEventCard.querySelectorAll('.sub-event-theme-card');
+        const themeInput = subEventCard.querySelector('.sub-event-theme-input');
+        
+        themeCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Only handle click if inherit checkbox is not checked
+                const inheritCheckbox = subEventCard.querySelector('.inherit-parent-theme-check');
+                if (inheritCheckbox.checked) return;
+                
+                // Remove selected border from all cards
+                themeCards.forEach(c => c.style.border = '2px solid transparent');
+                
+                // Add selected border to clicked card
+                this.style.border = '2px solid #3e64ff';
+                
+                // Update hidden input
+                themeInput.value = this.getAttribute('data-theme');
+            });
+        });
+    }
+    
+    // Preview sub-event theme function
+    function previewSubEventTheme(theme, subEventId) {
+        // Prevent the click from selecting the theme card
+        event.stopPropagation();
+        
+        // Get the sub-event name and description
+        const subEventCard = document.getElementById(subEventId);
+        const subEventNameInput = subEventCard.querySelector('input[name="sub_event_name[]"]');
+        const subEventDescInput = subEventCard.querySelector('textarea[name="sub_event_description[]"]');
+        
+        const subEventName = subEventNameInput.value || 'Sample Sub-Event';
+        const subEventDescription = subEventDescInput.value || 'This is a sample sub-event description for preview purposes.';
+        
+        // Reuse the same modal as main events
+        const previewFrame = document.getElementById('themePreviewFrame');
+        
+        // Set iframe source to preview the theme
+        const previewUrl = `/preview_registration_theme/${theme}?event_name=${encodeURIComponent(subEventName)}&event_description=${encodeURIComponent(subEventDescription)}&is_preview=true`;
+        
+        // Update modal title to indicate it's a sub-event
+        document.getElementById('themePreviewModalLabel').textContent = 
+            `${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme Preview (Sub-event)`;
+        
+        // Store current theme and sub-event ID for when "Use This Theme" is clicked
+        previewFrame.setAttribute('data-current-theme', theme);
+        previewFrame.setAttribute('data-sub-event-id', subEventId);
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('themePreviewModal'));
+        modal.show();
+        
+        // Set up onload handler
+        previewFrame.onload = function() {
+            try {
+                if (previewFrame.contentWindow.document.body) {
+                    previewFrame.contentWindow.document.body.classList.add(`theme-${theme}`);
+                }
+            } catch(e) {
+                console.error("Error updating theme preview:", e);
+            }
+        };
+        
+        // Set the iframe source
+        previewFrame.src = previewUrl;
+        
+        // Update the "Use This Theme" button's click handler to apply to the correct sub-event
+        document.getElementById('useThemeBtn').onclick = function() {
+            applyThemeToSubEvent(theme, subEventId);
+        };
+    }
+    
+    // Function to apply selected theme to the sub-event
+    function applyThemeToSubEvent(theme, subEventId) {
+        const subEventCard = document.getElementById(subEventId);
+        const themeCards = subEventCard.querySelectorAll('.sub-event-theme-card');
+        const themeInput = subEventCard.querySelector('.sub-event-theme-input');
+        const inheritCheckbox = subEventCard.querySelector('.inherit-parent-theme-check');
+        
+        // Uncheck the inherit checkbox since a specific theme was chosen
+        inheritCheckbox.checked = false;
+        
+        // Enable all theme cards
+        themeCards.forEach(card => {
+            card.style.opacity = '1';
+            card.style.pointerEvents = 'auto';
+            card.style.border = '2px solid transparent';
+            
+            // Highlight the selected card
+            if (card.getAttribute('data-theme') === theme) {
+                card.style.border = '2px solid #3e64ff';
+            }
+        });
+        
+        // Update hidden input value
+        themeInput.value = theme;
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('themePreviewModal'));
+        modal.hide();
+        
+        // Reset the Use Theme button to its original function for main event
+        document.getElementById('useThemeBtn').onclick = function() {
+            // Update theme selection for main event
+            const mainThemeCards = document.querySelectorAll('.registration-theme-card');
+            const mainThemeInput = document.getElementById('registrationThemeInput');
+            
+            // Remove selected class from all cards
+            mainThemeCards.forEach(card => {
+                card.classList.remove('selected');
+                if (card.getAttribute('data-theme') === currentPreviewTheme) {
+                    card.classList.add('selected');
+                }
+            });
+            
+            // Update hidden input value
+            mainThemeInput.value = currentPreviewTheme;
+            
+            // Close the modal
+            modal.hide();
+        };
+    }
+    
+    // Preview image function
+    function previewImage(input, previewId) {
+        const preview = document.getElementById(previewId);
+        preview.innerHTML = '';
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'event-thumbnail';
+                preview.appendChild(img);
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    // Add resource row function
+    function addResourceRow() {
+        const container = document.getElementById('resourcesContainer');
+        const newRow = document.createElement('div');
+        newRow.className = 'resource-row';
+        
+        newRow.innerHTML = `
+            <div class="resource-select">
+                <select class="form-select" name="resource_type[]">
+                    <option value="projector">Projector</option>
+                    <option value="microphone">Microphone</option>
+                    <option value="chairs">Chairs</option>
+                    <option value="tables">Tables</option>
+                    <option value="sound_system">Sound System</option>
+                    <option value="lighting">Lighting System</option>
+                    <option value="computer">Computers</option>
+                </select>
+            </div>
+            <div class="quantity-input">
+                <input type="number" class="form-control" name="resource_quantity[]" min="1" value="1">
+            </div>
+            <div class="resource-actions">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-resource">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        // Add remove functionality
+        container.appendChild(newRow);
+        
+        const removeButton = newRow.querySelector('.remove-resource');
+        removeButton.addEventListener('click', function() {
+            container.removeChild(newRow);
+        });
+    }
+    
+    // Function to update location when marker is moved
+    function updateSelectedLocation(latLng) {
+        document.getElementById('locationLat').value = latLng.lat.toFixed(6);
+        document.getElementById('locationLng').value = latLng.lng.toFixed(6);
+        
+        // Show coordinates in the preview
+        document.getElementById('selectedCoordinates').textContent = `${latLng.lat.toFixed(6)}, ${latLng.lng.toFixed(6)}`;
+        
+        // Show the location preview
+        document.getElementById('locationPreview').classList.add('active');
+        
+        // Reverse geocode the location
+        reverseGeocode(latLng);
+    }
+    
+    // Reverse geocode the location
+    function reverseGeocode(latLng) {
+        // Using a simple reverse geocoding service
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latLng.lat}&lon=${latLng.lng}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('selectedLocationText').textContent = data.display_name;
+                    
+                    // Auto-fill venue address if it's empty
+                    const venueAddressField = document.getElementById('venueAddress');
+                    if (venueAddressField.value.trim() === '') {
+                        venueAddressField.value = data.display_name;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error("Error in reverse geocoding:", error);
+            });
+    }
+    
+    // Search for a location
+    function searchLocation(query) {
+        // Using Nominatim search (free, no API key required)
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    const latlng = L.latLng(location.lat, location.lon);
+                    
+                    // Update map and marker
+                    map.setView(latlng, 15);
+                    marker.setLatLng(latlng);
+                    
+                    // Update form
+                    updateSelectedLocation(latlng);
+                } else {
+                    alert("Location not found. Please try a different search term.");
+                }
+            })
+            .catch(error => {
+                console.error("Error searching for location:", error);
+                alert("Error searching for location. Please try again.");
+            });
+    }
+      // Submit form function
+    function submitForm() {
+        const form = document.getElementById('createEventForm');
+        const formData = new FormData(form);
+        
+        // Additional validation if needed
+        if (!formData.get('location_lat') || !formData.get('location_lng')) {
+            alert("Please select a location on the map.");
+            return false;
+        }
+        
+        console.log("Submitting event creation form...");
+        
+        // Use fetch API instead of direct form submission to handle response
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message || 'Event created successfully',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Redirect after showing message
+                    window.location.href = data.redirect;
+                });
+            } else {
+                // Show error message
+                Swal.fire({
+                    title: 'Error',
+                    text: data.error || 'Failed to create event',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error("Error creating event:", error);
+            Swal.fire({
+                title: 'Error',
+                text: 'An unexpected error occurred. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+        
+        return false; // Prevent default form submission
+    }
     
     // Preview registration theme function
     let currentPreviewTheme = 'minimalist';
@@ -741,8 +1184,10 @@
         const eventName = document.getElementById('eventName').value || 'Sample Event';
         const eventDescription = document.getElementById('eventDescription').value || 'This is a sample event description for preview purposes.';
         
-        // Set iframe source to preview the theme
+        // Create previewFrame variable for the iframe to avoid "previewFrame is not defined" error
         const previewFrame = document.getElementById('themePreviewFrame');
+        
+        // Set iframe source to preview the theme - Using direct route at app level
         const previewUrl = `/preview_registration_theme/${theme}?event_name=${encodeURIComponent(eventName)}&event_description=${encodeURIComponent(eventDescription)}&is_preview=true`;
         
         // Update modal title

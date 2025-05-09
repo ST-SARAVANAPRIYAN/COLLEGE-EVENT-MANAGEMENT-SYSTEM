@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.name }} - Event Details{% endblock %}
+
+{% block additional_styles %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #ffffff;
+        color: #333;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .detail-container {
+        max-width: 800px;
+        margin: 3rem auto;
+        padding: 2rem;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        position: relative;
+        border: 1px solid #f0f0f0;
+    }
+    
+    .header-section {
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    
+    .header-section h1 {
+        font-size: 2rem;
+        color: #111;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .minimalist-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: #f8f8f8;
+        color: #666;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 8px;
+        border-radius: 2px;
+    }
+    
+    .event-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        color: #555;
+        font-size: 0.9rem;
+    }
+    
+    .event-meta-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .event-meta-item i {
+        margin-right: 0.5rem;
+        color: #888;
+    }
+    
+    .event-image {
+        width: 100%;
+        border-radius: 4px;
+        margin-bottom: 2rem;
+    }
+    
+    .tab-navigation {
+        display: flex;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .tab-item {
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        color: #777;
+        font-weight: 500;
+        position: relative;
+        transition: all 0.2s;
+    }
+    
+    .tab-item:hover {
+        color: #333;
+    }
+    
+    .tab-item.active {
+        color: #111;
+    }
+    
+    .tab-item.active::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #111;
+    }
+    
+    .tab-content {
+        display: none;
+        padding: 0.5rem 0;
+    }
+    
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.4s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .event-description {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: #444;
+        margin-bottom: 2rem;
+    }
+    
+    .organizer-section {
+        padding: 1.5rem;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        margin-bottom: 2rem;
+    }
+    
+    .organizer-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+    
+    .schedule-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2rem;
+    }
+    
+    .schedule-table th, .schedule-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .schedule-table th {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .schedule-table tr:hover {
+        background-color: #fafafa;
+    }
+    
+    .sub-events {
+        margin-top: 1.5rem;
+    }
+    
+    .sub-event-card {
+        padding: 1.5rem;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+    }
+    
+    .sub-event-card:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .sub-event-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+    }
+    
+    .location-map {
+        width: 100%;
+        height: 300px;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+        border: 1px solid #f0f0f0;
+    }
+    
+    .registration-info {
+        padding: 2rem;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        margin: 2rem 0;
+        text-align: center;
+    }
+    
+    .registration-status {
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .status-open {
+        color: #27ae60;
+    }
+    
+    .status-closed {
+        color: #e74c3c;
+    }
+    
+    .status-limited {
+        color: #f39c12;
+    }
+    
+    .btn-minimalist {
+        display: inline-block;
+        background-color: #111;
+        color: #fff;
+        border: none;
+        padding: 0.7rem 1.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+    
+    .btn-minimalist:hover {
+        background-color: #333;
+        color: #fff;
+        text-decoration: none;
+    }
+    
+    .footer-section {
+        margin-top: 2rem;
+        font-size: 0.85rem;
+        text-align: center;
+        color: #888;
+        padding-top: 1rem;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .detail-container {
+            margin: 2rem 1rem;
+            padding: 1.5rem;
+        }
+        
+        .tab-navigation {
+            overflow-x: auto;
+        }
+        
+        .tab-item {
+            padding: 0.75rem 1rem;
+            white-space: nowrap;
+        }
+        
+        .header-section h1 {
+            font-size: 1.7rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <div class="minimalist-badge">Minimalist</div>
+    
+    <div class="header-section">
+        <h1>{{ event.name }}</h1>
+    </div>
+    
+    <div class="event-meta">
+        <div class="event-meta-item">
+            <i class="fas fa-calendar"></i>
+            <span>{{ event.start_date|default(event.date) }}</span>
+        </div>
+        <div class="event-meta-item">
+            <i class="fas fa-clock"></i>
+            <span>{{ event.start_time|default('TBA') }}</span>
+        </div>
+        <div class="event-meta-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>{{ event.venue|default('TBA') }}</span>
+        </div>
+        <div class="event-meta-item">
+            <i class="fas fa-tag"></i>
+            <span>{{ event.category|default('Event') }}</span>
+        </div>
+        {% if not event.is_free and event.price > 0 %}
+        <div class="event-meta-item">
+            <i class="fas fa-money-bill"></i>
+            <span>₹{{ event.price }}</span>
+        </div>
+        {% else %}
+        <div class="event-meta-item">
+            <i class="fas fa-money-bill"></i>
+            <span>Free</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if event.image %}
+    <img src="{{ url_for('static', filename=event.image) }}" alt="{{ event.name }}" class="event-image">
+    {% endif %}
+    
+    <div class="tab-navigation">
+        <div class="tab-item active" data-tab="details">Details</div>
+        <div class="tab-item" data-tab="schedule">Schedule</div>
+        {% if event.sub_events and event.sub_events|length > 0 %}
+        <div class="tab-item" data-tab="sub-events">Sub Events</div>
+        {% endif %}
+        <div class="tab-item" data-tab="location">Location</div>
+    </div>
+    
+    <div class="tab-content active" id="details">
+        <div class="event-description">
+            {{ event.description|safe }}
+        </div>
+        
+        <div class="organizer-section">
+            <h3 class="organizer-header">Organized by</h3>
+            <p>{{ event.organiser|default('Event Organizer') }}</p>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="schedule">
+        <table class="schedule-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ event.start_time|default('TBA') }}</td>
+                    <td>Event Start</td>
+                </tr>
+                {% if event.custom_data and event.custom_data.schedule %}
+                    {% for item in event.custom_data.schedule %}
+                    <tr>
+                        <td>{{ item.time }}</td>
+                        <td>{{ item.activity }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+                <tr>
+                    <td>{{ event.end_time|default('TBA') }}</td>
+                    <td>Event End</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    {% if event.sub_events and event.sub_events|length > 0 %}
+    <div class="tab-content" id="sub-events">
+        <div class="sub-events">
+            {% for sub_event in event.sub_events %}
+            <div class="sub-event-card">
+                <h3 class="sub-event-title">{{ sub_event.name }}</h3>
+                <div class="event-meta" style="margin-bottom: 1rem;">
+                    <div class="event-meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ sub_event.start_date|default(sub_event.date) }}</span>
+                    </div>
+                    <div class="event-meta-item">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ sub_event.start_time|default('TBA') }}</span>
+                    </div>
+                </div>
+                <p>{{ sub_event.description|truncate(100) }}</p>
+                <a href="{{ url_for('event.event_detail', event_id=sub_event.id) }}" class="btn-minimalist">View Details</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="tab-content" id="location">
+        <div class="location-map">
+            <iframe 
+                width="100%" 
+                height="100%" 
+                frameborder="0" 
+                style="border:0" 
+                src="https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q={{ event.venue|urlencode }}" 
+                allowfullscreen>
+            </iframe>
+        </div>
+        <p><i class="fas fa-map-marker-alt"></i> {{ event.venue|default('TBA') }}</p>
+    </div>
+    
+    <div class="registration-info">
+        {% if event.registration_end_date and event.registration_end_date < current_date %}
+            <div class="registration-status status-closed">Registration Closed</div>
+        {% elif event.seats_available <= 0 %}
+            <div class="registration-status status-closed">Sold Out</div>
+        {% elif event.seats_available < 10 %}
+            <div class="registration-status status-limited">Limited Seats Available ({{ event.seats_available }})</div>
+        {% else %}
+            <div class="registration-status status-open">Registration Open</div>
+        {% endif %}
+        
+        {% if not is_registered and event.registration_end_date and event.registration_end_date >= current_date and event.seats_available > 0 %}
+            <a href="{{ url_for('event.register_form', event_id=event.id, theme='minimalist') }}" class="btn-minimalist">Register Now</a>
+        {% elif is_registered %}
+            <p style="color: #27ae60;">You are already registered for this event.</p>
+        {% endif %}
+    </div>
+    
+    <div class="footer-section">
+        <p>{{ event.name }} - Powered by College Event Management System</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabItems = document.querySelectorAll('.tab-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Remove active class from all tabs
+                tabItems.forEach(tab => tab.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to current tab
+                this.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}

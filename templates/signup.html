@@ -436,9 +436,7 @@
                     {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>
                     {% endif %}
-                    
-                    {% if otp_sent %}
-                    <!-- OTP verification form -->
+                      {% if otp_sent %}                    <!-- OTP verification form -->
                     <form id="otp-form" method="POST" action="{{ url_for('auth.signup_verify_otp') }}">
                         <div class="form-group">
                             <label class="form-label">Verification Code</label>
@@ -462,9 +460,7 @@
                         </div>
                         
                         <button type="submit" class="btn btn-primary form-btn">Verify & Create Account</button>
-                    </form>
-                    {% else %}
-                    <!-- Registration form -->
+                    </form>                    {% else %}                    <!-- Registration form -->
                     <form id="signup-form" method="POST" action="{{ url_for('auth.signup_request_otp') }}">
                         <div class="row">
                             <div class="col-6">
@@ -575,13 +571,11 @@
                 if (resendBtn) {
                     resendBtn.addEventListener('click', function() {
                         if (counter <= 0) {
-                            const email = document.querySelector('input[name="email"]').value;
-                            
-                            // Make API call to resend OTP
+                            const email = document.querySelector('input[name="email"]').value;                            // Make API call to resend OTP
                             fetch('/signup/resend_otp', {
                                 method: 'POST',
                                 headers: {
-                                    'Content-Type': 'application/json',
+                                    'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify({ email: email }),
                             })

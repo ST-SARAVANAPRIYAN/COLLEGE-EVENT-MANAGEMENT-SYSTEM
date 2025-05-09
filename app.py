@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
+from flask_wtf.csrf import CSRFProtect
 import os
 import pymysql
 from datetime import datetime, timedelta
@@ -12,6 +13,7 @@ from modules.admin import admin_bp
 from modules.organiser import organiser_bp
 from modules.participant import participant_bp
 from modules.payment import payment_bp
+from modules.api_organiser import api_organiser_bp
 
 # Create Flask application
 app = Flask(__name__)
@@ -20,6 +22,9 @@ app.secret_key = 'cems_secret_key_for_development'
 # Configure MySQL database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost/cems_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# CSRF protection disabled as per requirement
+# csrf = CSRFProtect(app)
 
 # Initialize database
 db.init_app(app)
@@ -50,6 +55,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(organiser_bp)
 app.register_blueprint(participant_bp)
 app.register_blueprint(payment_bp)
+app.register_blueprint(api_organiser_bp)
 
 # Create upload directories if they don't exist
 for dir_path in ['static/uploads/images', 'static/uploads/videos', 'static/uploads/brochures']:
@@ -155,48 +161,12 @@ def events_list():
     except Exception as e:
         return f"Error loading events page: {e}", 500
 
-@app.route('/events/<int:event_id>')
-def event_detail(event_id):
-    try:
-        # Get the event
-        event = Event.query.get_or_404(event_id)
-        
-        # Check if user is logged in and registered for this event
-        is_registered = False
-        if current_user.is_authenticated and current_user.role == 'participant':
-            registration = Registration.query.filter_by(
-                event_id=event_id, 
-                user_id=current_user.id
-            ).first()
-            is_registered = registration is not None
-        
-        # Get similar events (same category or tag)
-        if event.category:
-            similar_events = Event.query.filter(
-                Event.category == event.category,
-                Event.id != event.id
-            ).limit(3).all()
-        elif event.tag:
-            similar_events = Event.query.filter(
-                Event.tag == event.tag,
-                Event.id != event.id
-            ).limit(3).all()
-        else:
-            similar_events = []
-        
-        current_date = datetime.now().date()
-        
-        return render_template('event_detail.html', event=event, is_registered=is_registered,
-                              similar_events=similar_events, current_date=current_date)
-    except Exception as e:
-        return f"Error loading event details: {e}", 500
-
 @app.route('/events/<int:event_id>/register')
 @login_required
 def register_event(event_id):
     if current_user.role != 'participant':
         flash('Only participants can register for events', 'error')
-        return redirect(url_for('event_detail', event_id=event_id))
+        return redirect(url_for('event.event_detail', event_id=event_id))
     
     try:
         # Get the event
@@ -206,12 +176,12 @@ def register_event(event_id):
         current_date = datetime.now().date()
         if event.registration_end_date and event.registration_end_date < current_date:
             flash('Registration for this event has closed', 'error')
-            return redirect(url_for('event_detail', event_id=event_id))
+            return redirect(url_for('event.event_detail', event_id=event_id))
         
         # Check if seats are available
         if event.seats_available <= 0:
             flash('This event is sold out', 'error')
-            return redirect(url_for('event_detail', event_id=event_id))
+            return redirect(url_for('event.event_detail', event_id=event_id))
         
         # Check if already registered
         existing_registration = Registration.query.filter_by(
@@ -250,7 +220,55 @@ def register_event(event_id):
     except Exception as e:
         db.session.rollback()
         flash(f'An error occurred during registration: {str(e)}', 'error')
-        return redirect(url_for('event_detail', event_id=event_id))
+        return redirect(url_for('event.event_detail', event_id=event_id))
+
+@app.route('/preview_registration_theme/<theme>')
+def preview_registration_theme(theme):
+    """
+    Direct route for theme previews that doesn't rely on the event blueprint
+    """
+    try:
+        # List of available themes
+        available_themes = ['creative', 'elegant', 'minimalist', 'retro', 'tech']
+        
+        if theme not in available_themes:
+            return f"Theme '{theme}' is not available.", 404
+
+        # Get event data from query parameters or use sample data
+        event_name = request.args.get('event_name', 'Sample Event')
+        event_description = request.args.get('event_description', 'This is a preview of how the registration form will look with this theme.')
+        is_preview = request.args.get('is_preview', 'false').lower() == 'true'
+
+        # Sample event data for preview
+        event_data = {
+            'name': event_name,
+            'start_date': datetime.now().strftime('%Y-%m-%d'),
+            'start_time': '10:00 AM',
+            'venue': 'Sample Venue, Location',
+            'description': event_description,
+            'organiser': 'Event Organiser',
+            'price': 500,
+            'is_free': False
+        }
+
+        # Create a context with additional theme-related variables
+        context = {
+            'event': event_data,
+            'is_preview': is_preview,
+            'theme_name': theme,
+            'theme_assets_path': '/static/theme_assets/',
+            'static_url': '/static'
+        }
+
+        # Load the requested theme template
+        theme_template = f'registration_themes/{theme}.html'
+
+        # Render the theme with sample data and additional context
+        return render_template(theme_template, **context)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Error loading theme: {str(e)}", 500
 
 @app.errorhandler(404)
 def not_found(e):

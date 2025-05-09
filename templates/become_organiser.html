@@ -17,9 +17,7 @@
             
             <div class="alert alert-info mb-4">
                 As an organiser, you'll be able to create and manage your own events. Tell us a bit about yourself to get started.
-            </div>
-            
-            <!-- Step 1: Initial Registration Form -->
+            </div>              <!-- Step 1: Initial Registration Form -->
             <form id="organiserForm" method="POST" action="/become-organiser/request_otp" class="{% if otp_sent %}d-none{% endif %}">
                 <div class="mb-3">
                     <label for="name" class="form-label">Full Name</label>
@@ -46,9 +44,7 @@
                     <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
                 </div>
                 <button type="submit" class="btn btn-success w-100">Continue</button>
-            </form>
-            
-            <!-- Step 2: OTP Verification Form -->
+            </form>              <!-- Step 2: OTP Verification Form -->
             <form id="otpForm" method="POST" action="/become-organiser/verify_otp" class="{% if not otp_sent %}d-none{% endif %}">
                 <div class="alert alert-info">
                     A 6-digit verification code has been sent to <strong>{{ email }}</strong>
@@ -169,13 +165,11 @@
                         timerContainer.style.display = 'none';
                     }
                 }, 1000);
-                
-                resendBtn.addEventListener('click', function() {
-                    if (!this.disabled) {
-                        fetch('/become-organiser/resend_otp', {
+                  resendBtn.addEventListener('click', function() {
+                    if (!this.disabled) {                        fetch('/become-organiser/resend_otp', {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
+                                'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
                                 email: document.querySelector('input[name="email"]').value

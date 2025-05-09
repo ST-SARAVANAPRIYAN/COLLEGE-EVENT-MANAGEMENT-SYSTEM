@@ -501,7 +501,7 @@
             
             <ul class="nav-menu">
                 <li class="nav-menu-item">
-                    <a href="{{ url_for('participant_dashboard') }}" class="nav-menu-link active">
+                    <a href="{{ url_for('participant.dashboard') }}" class="nav-menu-link active">
                         <span class="nav-menu-icon">📊</span> Dashboard
                     </a>
                 </li>
@@ -576,7 +576,7 @@
                                     <div><span>📍</span> {{ event.location }}</div>
                                 </div>
                                 <div class="event-actions">
-                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-primary">View Details</a>
+                                    <a href="{{ url_for('event.event_detail', event_id=event.id) }}" class="btn btn-primary">View Details</a>
                                 </div>
                             </div>
                         </div>
@@ -621,7 +621,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('event_detail', event_id=registration.event.id) }}" class="btn btn-secondary">View</a>
+                                        <a href="{{ url_for('event.event_detail', event_id=registration.event.id) }}" class="btn btn-secondary">View</a>
                                         {% if registration.event.date > today %}
                                         <a href="{{ url_for('cancel_registration', event_id=registration.event.id) }}" class="btn btn-danger">Cancel</a>
                                         {% endif %}

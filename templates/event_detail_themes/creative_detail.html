@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.name }} - Event Details{% endblock %}
+
+{% block additional_styles %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #FF3366;
+        --secondary: #6C63FF;
+        --accent: #4ECDC4;
+        --bg-light: #FFFFFF;
+        --text-dark: #333333;
+        --text-light: #555555;
+        --border-radius: 15px;
+    }
+    
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #FAFAFA;
+        color: var(--text-dark);
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .creative-container {
+        max-width: 850px;
+        margin: 3rem auto;
+        position: relative;
+    }
+    
+    .creative-shape {
+        position: absolute;
+        z-index: -1;
+    }
+    
+    .shape-1 {
+        top: -80px;
+        left: -100px;
+        width: 200px;
+        height: 200px;
+        background-color: rgba(255, 51, 102, 0.1);
+        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    }
+    
+    .shape-2 {
+        bottom: -50px;
+        right: -70px;
+        width: 150px;
+        height: 150px;
+        background-color: rgba(108, 99, 255, 0.1);
+        border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+    }
+    
+    .shape-3 {
+        top: 40%;
+        left: -60px;
+        width: 120px;
+        height: 120px;
+        background-color: rgba(78, 205, 196, 0.1);
+        border-radius: 41% 59% 41% 59% / 33% 66% 34% 67%;
+    }
+    
+    .detail-header {
+        position: relative;
+        padding: 3rem 2rem 0;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        background-color: var(--bg-light);
+        box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .creative-badge {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 8px 15px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        font-weight: 600;
+        font-size: 0.75rem;
+        border-radius: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+    }
+    
+    .detail-header h1 {
+        font-size: 2.4rem;
+        margin-bottom: 1rem;
+        color: var(--text-dark);
+        font-weight: 700;
+        position: relative;
+        display: inline-block;
+    }
+    
+    .detail-header h1:after {
+        content: "";
+        position: absolute;
+        width: 60%;
+        height: 8px;
+        background: linear-gradient(to right, var(--primary), transparent);
+        bottom: -5px;
+        left: 0;
+        border-radius: 10px;
+    }
+    
+    .event-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .event-meta-item {
+        display: flex;
+        align-items: center;
+        background-color: #F8F9FA;
+        padding: 0.6rem 1rem;
+        border-radius: 30px;
+        font-size: 0.9rem;
+        box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s;
+    }
+    
+    .event-meta-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .event-meta-item i {
+        margin-right: 0.5rem;
+        color: var(--primary);
+    }
+    
+    .event-image-wrapper {
+        margin: 2rem -2rem 0;
+        position: relative;
+    }
+    
+    .event-image {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+    }
+    
+    .event-image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4));
+    }
+    
+    .detail-body {
+        background-color: var(--bg-light);
+        padding: 0 2rem 2rem;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .tab-navigation {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        margin: 0 -2rem;
+        padding: 0 2rem;
+        position: sticky;
+        top: 0;
+        background-color: var(--bg-light);
+        z-index: 10;
+        box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .tab-navigation::-webkit-scrollbar {
+        height: 0;
+    }
+    
+    .tab-item {
+        padding: 1rem 1.5rem;
+        white-space: nowrap;
+        cursor: pointer;
+        color: var(--text-light);
+        font-weight: 500;
+        position: relative;
+        transition: all 0.3s;
+    }
+    
+    .tab-item:hover {
+        color: var(--primary);
+    }
+    
+    .tab-item.active {
+        color: var(--primary);
+    }
+    
+    .tab-item.active::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 1rem;
+        right: 1rem;
+        height: 3px;
+        background: var(--primary);
+        border-radius: 3px 3px 0 0;
+    }
+    
+    .tab-content {
+        display: none;
+        padding: 2rem 0 0;
+    }
+    
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.6s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .event-description {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: var(--text-light);
+        margin-bottom: 2rem;
+    }
+    
+    .organizer-section {
+        padding: 1.5rem;
+        background-color: #F8F9FA;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .organizer-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary), var(--secondary));
+        border-radius: 5px;
+    }
+    
+    .organizer-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+    }
+    
+    .schedule-container {
+        position: relative;
+    }
+    
+    .schedule-item {
+        position: relative;
+        padding: 1.5rem;
+        background-color: #F8F9FA;
+        border-radius: var(--border-radius);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s;
+        border-left: 3px solid var(--secondary);
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .schedule-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .schedule-time {
+        min-width: 80px;
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .schedule-details {
+        flex: 1;
+    }
+    
+    .schedule-activity {
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 0.3rem;
+    }
+    
+    .sub-events {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .sub-event-card {
+        background-color: var(--bg-light);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .sub-event-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(to right, var(--primary), var(--secondary));
+    }
+    
+    .sub-event-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.15);
+    }
+    
+    .sub-event-title {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+    }
+    
+    .sub-event-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .sub-event-meta-item {
+        font-size: 0.85rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+    }
+    
+    .sub-event-meta-item i {
+        margin-right: 0.3rem;
+        color: var(--secondary);
+        font-size: 0.8rem;
+    }
+    
+    .sub-event-description {
+        font-size: 0.9rem;
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+    }
+    
+    .sub-event-action {
+        margin-top: auto;
+        text-align: right;
+    }
+    
+    .location-map {
+        width: 100%;
+        height: 300px;
+        border-radius: var(--border-radius);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.15);
+    }
+    
+    .location-details {
+        padding: 1rem;
+        background-color: #F8F9FA;
+        border-radius: var(--border-radius);
+        margin-top: 1rem;
+    }
+    
+    .location-details p {
+        margin: 0.5rem 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .location-details i {
+        margin-right: 0.5rem;
+        color: var(--secondary);
+    }
+    
+    .registration-info {
+        padding: 2rem;
+        background: linear-gradient(145deg, #f9f9f9, #ffffff);
+        border-radius: var(--border-radius);
+        margin: 2rem 0;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 15px 30px -15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .registration-info::before {
+        content: "";
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 100px;
+        height: 100px;
+        background-color: rgba(255, 51, 102, 0.1);
+        border-radius: 50%;
+    }
+    
+    .registration-info::after {
+        content: "";
+        position: absolute;
+        bottom: -30px;
+        left: -30px;
+        width: 80px;
+        height: 80px;
+        background-color: rgba(108, 99, 255, 0.1);
+        border-radius: 50%;
+    }
+    
+    .registration-status {
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+        position: relative;
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
+    }
+    
+    .status-open {
+        background-color: rgba(46, 213, 115, 0.1);
+        color: #2ed573;
+    }
+    
+    .status-closed {
+        background-color: rgba(255, 71, 87, 0.1);
+        color: #ff4757;
+    }
+    
+    .status-limited {
+        background-color: rgba(255, 165, 2, 0.1);
+        color: #ffa502;
+    }
+    
+    .btn-creative {
+        display: inline-block;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 0.8rem 2rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        box-shadow: 0 5px 15px rgba(255, 51, 102, 0.3);
+    }
+    
+    .btn-creative:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(255, 51, 102, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .footer-section {
+        margin-top: 3rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--text-light);
+    }
+    
+    .footer-section .creative-text {
+        font-family: 'Shadows Into Light', cursive;
+        font-size: 1.2rem;
+        color: var(--primary);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .creative-container {
+            margin: 2rem 1rem;
+        }
+        
+        .detail-header, .detail-body {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        
+        .event-image-wrapper {
+            margin: 1.5rem -1.5rem 0;
+        }
+        
+        .tab-navigation {
+            margin: 0 -1.5rem;
+            padding: 0 1.5rem;
+        }
+        
+        .sub-events {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    /* Animations */
+    @keyframes float {
+        0% { transform: translatey(0px); }
+        50% { transform: translatey(-10px); }
+        100% { transform: translatey(0px); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="creative-container">
+    <div class="creative-shape shape-1"></div>
+    <div class="creative-shape shape-2"></div>
+    <div class="creative-shape shape-3"></div>
+    
+    <div class="detail-header">
+        <div class="creative-badge">Creative</div>
+        <h1>{{ event.name }}</h1>
+        
+        <div class="event-meta">
+            <div class="event-meta-item">
+                <i class="fas fa-calendar"></i>
+                <span>{{ event.start_date|default(event.date) }}</span>
+            </div>
+            <div class="event-meta-item">
+                <i class="fas fa-clock"></i>
+                <span>{{ event.start_time|default('TBA') }}</span>
+            </div>
+            <div class="event-meta-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ event.venue|default('TBA') }}</span>
+            </div>
+            <div class="event-meta-item">
+                <i class="fas fa-tag"></i>
+                <span>{{ event.category|default('Event') }}</span>
+            </div>
+            {% if not event.is_free and event.price > 0 %}
+            <div class="event-meta-item">
+                <i class="fas fa-money-bill"></i>
+                <span>₹{{ event.price }}</span>
+            </div>
+            {% else %}
+            <div class="event-meta-item">
+                <i class="fas fa-money-bill"></i>
+                <span>Free</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if event.image %}
+        <div class="event-image-wrapper">
+            <img src="{{ url_for('static', filename=event.image) }}" alt="{{ event.name }}" class="event-image">
+            <div class="event-image-overlay"></div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="detail-body">
+        <div class="tab-navigation">
+            <div class="tab-item active" data-tab="details">Details</div>
+            <div class="tab-item" data-tab="schedule">Schedule</div>
+            {% if event.sub_events and event.sub_events|length > 0 %}
+            <div class="tab-item" data-tab="sub-events">Sub Events</div>
+            {% endif %}
+            <div class="tab-item" data-tab="location">Location</div>
+        </div>
+        
+        <div class="tab-content active" id="details">
+            <div class="event-description">
+                {{ event.description|safe }}
+            </div>
+            
+            <div class="organizer-section">
+                <h3 class="organizer-header">Organized by</h3>
+                <p>{{ event.organiser|default('Event Organizer') }}</p>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="schedule">
+            <div class="schedule-container">
+                <div class="schedule-item">
+                    <div class="schedule-time">{{ event.start_time|default('TBA') }}</div>
+                    <div class="schedule-details">
+                        <div class="schedule-activity">Event Start</div>
+                    </div>
+                </div>
+                
+                {% if event.custom_data and event.custom_data.schedule %}
+                    {% for item in event.custom_data.schedule %}
+                    <div class="schedule-item">
+                        <div class="schedule-time">{{ item.time }}</div>
+                        <div class="schedule-details">
+                            <div class="schedule-activity">{{ item.activity }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="schedule-item">
+                    <div class="schedule-time">{{ event.end_time|default('TBA') }}</div>
+                    <div class="schedule-details">
+                        <div class="schedule-activity">Event End</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if event.sub_events and event.sub_events|length > 0 %}
+        <div class="tab-content" id="sub-events">
+            <div class="sub-events">
+                {% for sub_event in event.sub_events %}
+                <div class="sub-event-card">
+                    <h3 class="sub-event-title">{{ sub_event.name }}</h3>
+                    
+                    <div class="sub-event-meta">
+                        <div class="sub-event-meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ sub_event.start_date|default(sub_event.date) }}</span>
+                        </div>
+                        <div class="sub-event-meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ sub_event.start_time|default('TBA') }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="sub-event-description">
+                        {{ sub_event.description|truncate(100) }}
+                    </div>
+                    
+                    <div class="sub-event-action">
+                        <a href="{{ url_for('event.event_detail', event_id=sub_event.id) }}" class="btn-creative" style="padding: 0.5rem 1.2rem; font-size: 0.8rem;">View Details</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="tab-content" id="location">
+            <div class="location-map">
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0" 
+                    style="border:0" 
+                    src="https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q={{ event.venue|urlencode }}" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            
+            <div class="location-details">
+                <p><i class="fas fa-map-marker-alt"></i> {{ event.venue|default('TBA') }}</p>
+                {% if event.custom_data and event.custom_data.location_details %}
+                <p><i class="fas fa-info-circle"></i> {{ event.custom_data.location_details }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="registration-info">
+            {% if event.registration_end_date and event.registration_end_date < current_date %}
+                <div class="registration-status status-closed">Registration Closed</div>
+            {% elif event.seats_available <= 0 %}
+                <div class="registration-status status-closed">Sold Out</div>
+            {% elif event.seats_available < 10 %}
+                <div class="registration-status status-limited">Limited Seats Available ({{ event.seats_available }})</div>
+            {% else %}
+                <div class="registration-status status-open">Registration Open</div>
+            {% endif %}
+            
+            {% if not is_registered and event.registration_end_date and event.registration_end_date >= current_date and event.seats_available > 0 %}
+                <a href="{{ url_for('event.register_form', event_id=event.id, theme='creative') }}" class="btn-creative">Register Now</a>
+            {% elif is_registered %}
+                <p style="color: #2ed573; font-weight: 500;">You are already registered for this event.</p>
+            {% endif %}
+        </div>
+        
+        <div class="footer-section">
+            <p><span class="creative-text">{{ event.name }}</span> - Powered by College Event Management System</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabItems = document.querySelectorAll('.tab-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Remove active class from all tabs
+                tabItems.forEach(tab => tab.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to current tab
+                this.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}
