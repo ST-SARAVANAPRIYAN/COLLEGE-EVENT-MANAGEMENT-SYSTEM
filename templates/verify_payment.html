@@ -1,0 +1,93 @@
+{% extends "organiser_base.html" %}
+
+{% block title %}Verify UPI Payment{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i> Verify UPI Payment</h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Registration Details</h5>
+                    <div class="alert alert-info">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Event:</strong> {{ event.name }}</p>
+                                <p><strong>Participant:</strong> {{ user.name }}</p>
+                                <p><strong>Email:</strong> {{ user.email }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Registration Date:</strong> {{ registration.registration_date.strftime('%Y-%m-%d') }}</p>
+                                <p><strong>Amount:</strong> ₹{{ event.price }}</p>
+                                <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if registration.payment_status == 'completed' else 'warning' }}">{{ registration.payment_status }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if registration.payment_status == 'completed' %}
+                    <div class="alert alert-success mt-3">
+                        <i class="fas fa-check-circle me-2"></i> This payment has already been verified.
+                    </div>
+                    {% else %}
+                    <form action="{{ url_for('payment.verify_upi_payment') }}" method="post">
+                        <h5 class="mt-4">Verify UPI Payment</h5>
+                        <p class="text-muted">Please confirm that you have received the UPI payment from this participant before verifying.</p>
+                        
+                        <input type="hidden" name="registration_id" value="{{ registration.id }}">
+                          <div class="mb-3">
+                            <label for="transaction_id" class="form-label">UPI Transaction ID</label>
+                            <input type="text" class="form-control" id="transaction_id" name="transaction_id" 
+                                   value="{{ registration.payment_id }}" readonly>
+                            <small class="form-text text-muted">Transaction ID submitted by the participant</small>
+                        </div>
+                        
+                        {% if registration.verification_notes %}
+                        <div class="mb-3">
+                            <label class="form-label">Participant Notes</label>
+                            <textarea class="form-control" readonly rows="3">{{ registration.verification_notes }}</textarea>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="verification_notes" class="form-label">Your Notes</label>
+                            <textarea class="form-control" id="verification_notes" name="verification_notes" rows="3" 
+                                placeholder="Add any notes about this payment verification..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="confirm_payment" required>
+                            <label class="form-check-label" for="confirm_payment">I confirm that I have received a payment of 
+                                <strong>₹{{ event.price }}</strong> from <strong>{{ user.name }}</strong> for this registration.</label>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <p class="mb-2"><strong>Action:</strong></p>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="action" id="verify" value="verify" checked>
+                                <label class="form-check-label" for="verify">Verify Payment</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="action" id="reject" value="reject">
+                                <label class="form-check-label" for="reject">Reject Payment</label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('organiser.dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check-circle me-2"></i> Verify Payment
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

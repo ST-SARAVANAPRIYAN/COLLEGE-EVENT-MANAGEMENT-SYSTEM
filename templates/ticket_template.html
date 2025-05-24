@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Ticket</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .ticket-container {
+            width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .ticket-header {
+            background-color: #3f51b5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        .ticket-title {
+            margin: 0;
+            font-size: 28px;
+        }
+        .ticket-subtitle {
+            font-size: 16px;
+            margin: 5px 0 0;
+        }
+        .ticket-body {
+            padding: 20px;
+        }
+        .ticket-info-row {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .ticket-info-label {
+            font-weight: bold;
+            width: 150px;
+            color: #555;
+        }
+        .ticket-info-value {
+            flex: 1;
+        }
+        .ticket-footer {
+            background-color: #f5f5f5;
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #777;
+        }
+        .ticket-qr {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .ticket-qr img {
+            max-width: 150px;
+        }
+        .ticket-verification {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .ticket-verification-code {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #2e7d32;
+        }
+        .ticket-logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            height: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket-container">
+        <div class="ticket-header">
+            <img class="ticket-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+            <h1 class="ticket-title">{{ event.name }}</h1>
+            <p class="ticket-subtitle">{{ event.venue }} • {{ event.date }}</p>
+        </div>
+        <div class="ticket-body">
+            <div class="ticket-info-row">
+                <div class="ticket-info-label">Participant</div>
+                <div class="ticket-info-value">{{ user.name }}</div>
+            </div>
+            <div class="ticket-info-row">
+                <div class="ticket-info-label">Email</div>
+                <div class="ticket-info-value">{{ user.email }}</div>
+            </div>
+            <div class="ticket-info-row">
+                <div class="ticket-info-label">Registration ID</div>
+                <div class="ticket-info-value">{{ registration.id }}</div>
+            </div>
+            <div class="ticket-info-row">
+                <div class="ticket-info-label">Payment Status</div>
+                <div class="ticket-info-value">{{ registration.payment_status }}</div>
+            </div>
+            <div class="ticket-info-row">
+                <div class="ticket-info-label">Payment ID</div>
+                <div class="ticket-info-value">{{ registration.payment_id }}</div>
+            </div>
+            <div class="ticket-info-row">
+                <div class="ticket-info-label">Date & Time</div>
+                <div class="ticket-info-value">{{ event.date }} {{ event.start_time }}</div>
+            </div>
+            <div class="ticket-info-row">
+                <div class="ticket-info-label">Venue</div>
+                <div class="ticket-info-value">{{ event.venue }}</div>
+            </div>
+
+            <div class="ticket-verification">
+                <p>Verification Code</p>
+                <div class="ticket-verification-code">{{ verification_code }}</div>
+            </div>
+            
+            <div class="ticket-qr">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ qr_data }}" alt="QR Code">
+                <p>Scan this QR code at the event for quick check-in</p>
+            </div>
+        </div>
+        <div class="ticket-footer">
+            This ticket is valid only for the named participant. Please present a valid ID at the venue.
+            <br>Verified on {{ registration.verification_date.strftime('%Y-%m-%d %H:%M:%S') if registration.verification_date else 'N/A' }}
+        </div>
+    </div>
+</body>
+</html>

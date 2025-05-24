@@ -147,14 +147,12 @@ def process(registration_id):
         if registration.user_id != session.get('user_id'):
             flash('Unauthorized access to payment', 'danger')
             return redirect(url_for('participant.dashboard'))
-        
-        # Get event details
+          # Get event details
         event = Event.query.get(registration.event_id)
         if not event:
             flash('Event not found', 'danger')
             return redirect(url_for('participant.dashboard'))
-        
-        # Get organiser UPI ID - check both organiser_id and created_by fields
+          # Get organiser UPI ID - check both organiser_id and created_by fields
         organiser_id = event.organiser_id if event.organiser_id else event.created_by
         print(f"Debug - Event ID: {event.id}, Organiser ID: {organiser_id}")
         
@@ -281,28 +279,27 @@ def check_upi_status(registration_id):
         registration = Registration.query.get_or_404(registration_id)
         
         # Check if payment is already completed
-        if registration.payment_status == 'completed':
-            # Use registration directly instead of querying for a transaction
-            # Update registration with transaction data if needed
-            event = Event.query.get(registration.event_id)
-            
-            if not registration.transaction_timestamp:
-                registration.transaction_timestamp = datetime.utcnow()
+        if registration.payment_status == 'completed':            # Use registration directly instead of querying for a transaction
+            if registration.payment_status == 'completed':
+                # Update registration with transaction data if needed
+                event = Event.query.get(registration.event_id)
                 
-            if not registration.amount and event:
-                registration.amount = event.price
+                if not registration.transaction_timestamp:
+                    registration.transaction_timestamp = datetime.utcnow()
+                    
+                if not registration.amount and event:
+                    registration.amount = event.price
+                    
+                if not registration.payee_name and registration.user:
+                    registration.payee_name = registration.user.name
+                      if not registration.additional_data:
+                    registration.additional_data = json.dumps({
+                        'event_id': event.id if event else None,
+                        'event_name': event.name if event else 'Unknown Event'
+                    })
                 
-            if not registration.payee_name and registration.user:
-                registration.payee_name = registration.user.name
-                
-            if not registration.additional_data:
-                registration.additional_data = json.dumps({
-                    'event_id': event.id if event else None,
-                    'event_name': event.name if event else 'Unknown Event'
-                })
-            
-            # Update the registration
-            db.session.commit()
+                # Update the registration
+                db.session.commit()
             
             return jsonify({
                 'success': True,
@@ -314,7 +311,7 @@ def check_upi_status(registration_id):
         
         # In a real implementation, you would check with your payment provider's API
         # to verify if a payment has been made matching this registration's details
-        # In a real-world implementation, this is where you would integrate with a payment gateway or bank API
+          # In a real-world implementation, this is where you would integrate with a payment gateway or bank API
         # to check if a payment has been made for this registration
         
         # For now, we'll disable the automatic verification since we don't have a real payment gateway
@@ -340,8 +337,7 @@ def check_upi_status(registration_id):
             registration.payment_method = 'upi'
             if not registration.payment_id:
                 registration.payment_id = f"upi_{uuid.uuid4().hex[:8]}"
-            
-            # Update registration with transaction data
+              # Update registration with transaction data
             event = Event.query.get(registration.event_id)
             
             # Add transaction data directly to registration
@@ -563,8 +559,7 @@ Event Details:
 
 Regards,
 CEMS Team
-"""
-                send_email(user.email, email_subject, email_body)
+"""                send_email(user.email, email_subject, email_body)
                 
             flash(success_message, 'success')
             return redirect(url_for('organiser.payment_transactions'))

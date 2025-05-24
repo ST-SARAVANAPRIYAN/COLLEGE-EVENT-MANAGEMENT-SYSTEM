@@ -265,13 +265,7 @@
                         <button class="nav-link active" id="info-tab" data-bs-toggle="pill" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="true">Basic Info</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="verification-tab" data-bs-toggle="pill" data-bs-target="#verification" type="button" role="tab" aria-controls="verification" aria-selected="false">Verification</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="payment-tab" data-bs-toggle="pill" data-bs-target="#payment" type="button" role="tab" aria-controls="payment" aria-selected="false">Payment Info</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="subscription-tab" data-bs-toggle="pill" data-bs-target="#subscription" type="button" role="tab" aria-controls="subscription" aria-selected="false">Subscription</button>
                     </li>
                 </ul>
                 
@@ -332,179 +326,21 @@
                         </form>
                     </div>
                     
-                    <!-- Verification Tab -->
-                    <div class="tab-pane fade" id="verification" role="tabpanel" aria-labelledby="verification-tab">
-                        <div id="verificationInfo" class="mb-4">
-                            <h5>Verification Status</h5>
-                            <div id="verificationStatusDetails">Loading verification status...</div>
-                        </div>
-                        
-                        <h5>Required Documents</h5>
-                        <p class="text-muted mb-3">Please upload the following documents to verify your organiser account. All documents must be clear and valid.</p>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <div id="idProof" class="document-card">
-                                    <h6><i class="fas fa-id-card me-2"></i> ID Proof</h6>
-                                    <p class="text-muted small">Upload your government issued ID card (Aadhar, PAN, Passport, etc.)</p>
-                                    <input type="file" class="form-control form-control-sm" id="idProofFile" accept="image/*,.pdf">
-                                    <div id="idProofStatus" class="small mt-2"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <div id="addressProof" class="document-card">
-                                    <h6><i class="fas fa-home me-2"></i> Address Proof</h6>
-                                    <p class="text-muted small">Upload a document that verifies your address (Utility bill, etc.)</p>
-                                    <input type="file" class="form-control form-control-sm" id="addressProofFile" accept="image/*,.pdf">
-                                    <div id="addressProofStatus" class="small mt-2"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <div id="organizationProof" class="document-card">
-                                    <h6><i class="fas fa-building me-2"></i> Organization Proof</h6>
-                                    <p class="text-muted small">Upload registration certificate or business license</p>
-                                    <input type="file" class="form-control form-control-sm" id="organizationProofFile" accept="image/*,.pdf">
-                                    <div id="organizationProofStatus" class="small mt-2"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <div id="otherDocument" class="document-card">
-                                    <h6><i class="fas fa-file-alt me-2"></i> Other Supporting Document</h6>
-                                    <p class="text-muted small">Any other document that might help with verification</p>
-                                    <input type="file" class="form-control form-control-sm" id="otherDocumentFile" accept="image/*,.pdf">
-                                    <div id="otherDocumentStatus" class="small mt-2"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <button type="button" class="btn btn-primary" id="submitVerificationBtn">Submit for Verification</button>
-                    </div>
-                    
                     <!-- Payment Info Tab -->
                     <div class="tab-pane fade" id="payment" role="tabpanel" aria-labelledby="payment-tab">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            Your payment information is used to receive payments from ticket sales and other event revenue.
+                            Your UPI ID is used to receive payments from ticket sales and other event revenue.
                         </div>
-                        
                         <form id="paymentInfoForm">
+                            <!-- UPI Details Only -->
                             <div class="mb-3">
-                                <label class="form-label">Payment Method</label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="paymentMethod" id="bankTransfer" value="bank_transfer" checked>
-                                    <label class="form-check-label" for="bankTransfer">
-                                        Bank Transfer
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="paymentMethod" id="upi" value="upi">
-                                    <label class="form-check-label" for="upi">
-                                        UPI
-                                    </label>
-                                </div>
+                                <label for="upiId" class="form-label">UPI ID</label>
+                                <input type="text" class="form-control" id="upiId" placeholder="username@bankname">
+                                <div class="form-text">Enter your UPI ID in the format username@bankname</div>
                             </div>
-                            
-                            <!-- Bank Transfer Details -->
-                            <div id="bankTransferDetails">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="accountHolder" class="form-label">Account Holder Name</label>
-                                        <input type="text" class="form-control" id="accountHolder">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="accountNumber" class="form-label">Account Number</label>
-                                        <input type="text" class="form-control" id="accountNumber">
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="ifscCode" class="form-label">IFSC Code</label>
-                                        <input type="text" class="form-control" id="ifscCode">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="bankName" class="form-label">Bank Name</label>
-                                        <input type="text" class="form-control" id="bankName">
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="branchName" class="form-label">Branch Name</label>
-                                        <input type="text" class="form-control" id="branchName">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="accountType" class="form-label">Account Type</label>
-                                        <select class="form-select" id="accountType">
-                                            <option value="savings">Savings</option>
-                                            <option value="current">Current</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- UPI Details -->
-                            <div id="upiDetails" style="display: none;">
-                                <div class="mb-3">
-                                    <label for="upiId" class="form-label">UPI ID</label>
-                                    <input type="text" class="form-control" id="upiId" placeholder="username@bankname">
-                                    <div class="form-text">Enter your UPI ID in the format username@bankname</div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="upiName" class="form-label">Name Registered with UPI</label>
-                                    <input type="text" class="form-control" id="upiName">
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="panNumber" class="form-label">PAN Number</label>
-                                <input type="text" class="form-control" id="panNumber" placeholder="ABCDE1234F">
-                                <div class="form-text">Required for tax purposes</div>
-                            </div>
-                            
                             <button type="submit" class="btn btn-primary">Save Payment Information</button>
                         </form>
-                    </div>
-                    
-                    <!-- Subscription Tab -->
-                    <div class="tab-pane fade" id="subscription" role="tabpanel" aria-labelledby="subscription-tab">
-                        <h5 class="mb-4">Your Current Subscription</h5>
-                        
-                        <div class="subscription-card subscription-free">
-                            <div class="subscription-header">
-                                <h5>Free Plan</h5>
-                            </div>
-                            <div class="subscription-body">
-                                <ul class="list-unstyled">
-                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Create up to 3 events</li>
-                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Basic analytics</li>
-                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Standard support</li>
-                                    <li class="mb-2"><i class="fas fa-times-circle text-danger me-2"></i> Premium features</li>
-                                    <li class="mb-2"><i class="fas fa-times-circle text-danger me-2"></i> Priority support</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div class="upsell-card">
-                            <h5>Upgrade to Premium</h5>
-                            <p class="mb-3">Get access to all premium features and create unlimited events!</p>
-                            <ul class="list-unstyled mb-3">
-                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Unlimited events</li>
-                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Advanced analytics</li>
-                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Priority support</li>
-                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Custom branding</li>
-                                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Early access to new features</li>
-                            </ul>
-                            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#upgradePlanModal">
-                                <i class="fas fa-crown me-2"></i> Upgrade Now
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -663,64 +499,16 @@
         </div>
     </div>
 </div>
-
-<!-- Upgrade Plan Modal -->
-<div class="modal fade" id="upgradePlanModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Upgrade to Premium</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="subscription-card subscription-premium">
-                    <div class="subscription-header">
-                        <h5>Premium Plan - ₹499/month</h5>
-                    </div>
-                    <div class="subscription-body">
-                        <p class="mb-3">Get access to all premium features and create unlimited events!</p>
-                        <ul class="list-unstyled mb-3">
-                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Unlimited events</li>
-                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Advanced analytics</li>
-                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Priority support</li>
-                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Custom branding</li>
-                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Early access to new features</li>
-                        </ul>
-                        
-                        <form id="paymentForm">
-                            <div class="mb-3">
-                                <label for="cardNumber" class="form-label">Card Number</label>
-                                <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456">
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="expiryDate" class="form-label">Expiry Date</label>
-                                    <input type="text" class="form-control" id="expiryDate" placeholder="MM/YY">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="cvv" class="form-label">CVV</label>
-                                    <input type="password" class="form-control" id="cvv" placeholder="123">
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="cardName" class="form-label">Name on Card</label>
-                                <input type="text" class="form-control" id="cardName">
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmUpgrade">Upgrade Now - ₹499/month</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Helper function to get CSRF token
+    function getCsrfToken() {
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        return metaTag ? metaTag.getAttribute('content') : '';
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Load organiser profile data
         loadOrganiserProfile();
@@ -739,28 +527,10 @@
             saveProfile();
         });
         
-        // Handle payment method toggle
-        document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'bank_transfer') {
-                    document.getElementById('bankTransferDetails').style.display = 'block';
-                    document.getElementById('upiDetails').style.display = 'none';
-                } else {
-                    document.getElementById('bankTransferDetails').style.display = 'none';
-                    document.getElementById('upiDetails').style.display = 'block';
-                }
-            });
-        });
-        
         // Handle payment info form submission
         document.getElementById('paymentInfoForm').addEventListener('submit', function(e) {
             e.preventDefault();
             savePaymentInfo();
-        });
-        
-        // Handle verification submission
-        document.getElementById('submitVerificationBtn').addEventListener('click', function() {
-            submitVerification();
         });
         
         // Handle password change form
@@ -775,11 +545,6 @@
         
         document.getElementById('newPassword').addEventListener('input', function() {
             validatePasswordMatch();
-        });
-        
-        // Handle upgrade plan
-        document.getElementById('confirmUpgrade').addEventListener('click', function() {
-            upgradeToPremium();
         });
         
         // Handle notification settings changes
@@ -813,62 +578,19 @@
     
     async function loadOrganiserProfile() {
         try {
-            // In a real implementation, this would be an API call to load the organiser's profile
-            // For now, we'll simulate the data
+            // Show loading state
+            document.getElementById('organiserName').textContent = 'Loading...';
             
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // Fetch the organiser profile data from the API
+            const response = await fetch('/api/profile');
+            const data = await response.json();
             
-            const profileData = {
-                id: 123,
-                name: "John Doe",
-                organizationName: "Tech Events India",
-                email: "john.doe@example.com",
-                phone: "+91 9876543210",
-                profilePictureUrl: null, // Simulating no profile picture
-                biography: "Passionate event organiser with over 5 years of experience in hosting technical workshops and conferences.",
-                address: "123 Main Street, Tech Park",
-                city: "Chennai",
-                state: "Tamil Nadu",
-                verificationStatus: "pending", // Options: pending, verified, rejected
-                stats: {
-                    eventsCreated: 12,
-                    totalParticipants: 350,
-                    averageRating: 4.7,
-                    totalRevenue: 125000
-                },
-                socialLinks: {
-                    facebook: "https://facebook.com/techeventsindia",
-                    instagram: "https://instagram.com/techeventsindia",
-                    twitter: "https://twitter.com/techeventsindia",
-                    linkedin: "https://linkedin.com/company/techeventsindia"
-                },
-                documents: {
-                    idProof: true,
-                    addressProof: true,
-                    organizationProof: false,
-                    otherDocument: false
-                },
-                paymentInfo: {
-                    method: "bank_transfer",
-                    bankDetails: {
-                        accountHolder: "John Doe",
-                        accountNumber: "1234567890",
-                        ifscCode: "ABCD0001234",
-                        bankName: "State Bank of India",
-                        branchName: "Chennai Main",
-                        accountType: "savings"
-                    },
-                    upiDetails: {
-                        upiId: "johndoe@okbank",
-                        name: "John Doe"
-                    },
-                    panNumber: "ABCDE1234F"
-                }
-            };
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load profile data');
+            }
             
             // Update UI with profile data
-            updateProfileUI(profileData);
+            updateProfileUI(data.profile);
             
         } catch (error) {
             console.error('Error loading profile:', error);
@@ -913,65 +635,11 @@
         document.getElementById('city').value = data.city || '';
         document.getElementById('state').value = data.state || '';
         
-        // Update verification status details
-        const verificationStatusDetails = document.getElementById('verificationStatusDetails');
-        if (data.verificationStatus === 'verified') {
-            verificationStatusDetails.innerHTML = `
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle me-2"></i>
-                    Your account is verified. You can create and publish events without restrictions.
-                </div>
-            `;
-        } else if (data.verificationStatus === 'pending') {
-            verificationStatusDetails.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="fas fa-clock me-2"></i>
-                    Your verification is pending. Our team will review your documents and update you soon.
-                </div>
-            `;
-        } else {
-            verificationStatusDetails.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-times-circle me-2"></i>
-                    Your verification was rejected. Please update your documents and submit again.
-                    <div class="mt-2">
-                        <strong>Reason:</strong> The provided documents were unclear or invalid. Please ensure all documents are clear and valid.
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Update document statuses
-        updateDocumentStatus('idProof', data.documents.idProof);
-        updateDocumentStatus('addressProof', data.documents.addressProof);
-        updateDocumentStatus('organizationProof', data.documents.organizationProof);
-        updateDocumentStatus('otherDocument', data.documents.otherDocument);
-        
         // Update payment info
         if (data.paymentInfo) {
-            if (data.paymentInfo.method === 'bank_transfer') {
-                document.getElementById('bankTransfer').checked = true;
-            } else {
-                document.getElementById('upi').checked = true;
-                document.getElementById('bankTransferDetails').style.display = 'none';
-                document.getElementById('upiDetails').style.display = 'block';
-            }
-            
-            if (data.paymentInfo.bankDetails) {
-                document.getElementById('accountHolder').value = data.paymentInfo.bankDetails.accountHolder || '';
-                document.getElementById('accountNumber').value = data.paymentInfo.bankDetails.accountNumber || '';
-                document.getElementById('ifscCode').value = data.paymentInfo.bankDetails.ifscCode || '';
-                document.getElementById('bankName').value = data.paymentInfo.bankDetails.bankName || '';
-                document.getElementById('branchName').value = data.paymentInfo.bankDetails.branchName || '';
-                document.getElementById('accountType').value = data.paymentInfo.bankDetails.accountType || 'savings';
-            }
-            
             if (data.paymentInfo.upiDetails) {
                 document.getElementById('upiId').value = data.paymentInfo.upiDetails.upiId || '';
-                document.getElementById('upiName').value = data.paymentInfo.upiDetails.name || '';
             }
-            
-            document.getElementById('panNumber').value = data.paymentInfo.panNumber || '';
         }
         
         // Update social links
@@ -981,70 +649,116 @@
         document.getElementById('linkedinLink').value = data.socialLinks?.linkedin || '';
     }
     
-    function updateDocumentStatus(documentId, isUploaded) {
-        const documentElement = document.getElementById(documentId);
-        const statusElement = document.getElementById(`${documentId}Status`);
-        
-        if (isUploaded) {
-            documentElement.classList.add('uploaded');
-            statusElement.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i> Document uploaded</span>`;
-        } else {
-            statusElement.innerHTML = `<span class="text-muted">No document uploaded</span>`;
+    async function saveProfile() {
+        try {
+            // Get form data
+            const profileData = {
+                name: document.getElementById('fullName').value,
+                organizationName: document.getElementById('displayName').value,
+                phone: document.getElementById('phone').value,
+                biography: document.getElementById('biography').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value
+            };
+            
+            // Send data to server
+            const response = await fetch('/api/profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify(profileData)
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to update profile');
+            }
+            
+            alert('Profile updated successfully!');
+            
+            // Reload profile data to reflect updates
+            await loadOrganiserProfile();
+            
+            // Add to activity log
+            const nowText = "Just now";
+            const activityHtml = `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div><strong>Profile updated</strong></div>
+                        <small class="text-muted">You updated your profile information</small>
+                    </div>
+                    <small class="text-muted">${nowText}</small>
+                </li>
+            `;
+            
+            const activityLog = document.getElementById('activityLog');
+            activityLog.insertAdjacentHTML('afterbegin', activityHtml);
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            alert('Failed to update profile. Please try again.');
         }
+    }    // UPI ID validation
+    function validateUpiId(upiId) {
+        // UPI ID format typically: username@bankname
+        const upiRegex = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9]+$/;
+        return upiRegex.test(upiId);
     }
     
-    function saveProfile() {
-        // In a real implementation, this would save the profile data to the database
-        alert('Profile updated successfully!');
-        
-        // Add to activity log
-        const nowText = "Just now";
-        const activityHtml = `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <div><strong>Profile updated</strong></div>
-                    <small class="text-muted">You updated your profile information</small>
-                </div>
-                <small class="text-muted">${nowText}</small>
-            </li>
-        `;
-        
-        const activityLog = document.getElementById('activityLog');
-        activityLog.insertAdjacentHTML('afterbegin', activityHtml);
-    }
-    
-    function savePaymentInfo() {
-        // In a real implementation, this would save the payment info to the database
-        alert('Payment information updated successfully!');
-    }
-    
-    function submitVerification() {
-        // In a real implementation, this would submit the verification documents to the database
-        alert('Verification documents submitted successfully! Our team will review your documents and update you soon.');
-        
-        // Update verification status
-        const verificationStatusDetails = document.getElementById('verificationStatusDetails');
-        verificationStatusDetails.innerHTML = `
-            <div class="alert alert-warning">
-                <i class="fas fa-clock me-2"></i>
-                Your verification is pending. Our team will review your documents and update you soon.
-            </div>
-        `;
-        
-        // Add to activity log
-        const nowText = "Just now";
-        const activityHtml = `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <div><strong>Verification submitted</strong></div>
-                    <small class="text-muted">You submitted verification documents</small>
-                </div>
-                <small class="text-muted">${nowText}</small>
-            </li>
-        `;
-        
-        const activityLog = document.getElementById('activityLog');
-        activityLog.insertAdjacentHTML('afterbegin', activityHtml);
+    async function savePaymentInfo() {
+        try {
+            // Only UPI method is supported, only upiId field is present
+            const upiIdInput = document.getElementById('upiId');
+            if (!upiIdInput) {
+                alert('UPI ID field not found.');
+                return;
+            }
+            const upiId = upiIdInput.value;
+            // Validate UPI ID
+            if (upiId.trim() !== '' && !validateUpiId(upiId)) {
+                alert('Please enter a valid UPI ID in the format username@bankname');
+                return;
+            }
+            let paymentData = {
+                method: 'upi',
+                upiDetails: {
+                    upiId: upiId
+                }
+            };
+            // Send payment info to server
+            const response = await fetch('/api/profile/payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify(paymentData)
+            });
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update payment information');
+            }
+            alert('Payment information updated successfully!');
+            // Add to activity log
+            const nowText = "Just now";
+            const activityHtml = `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div><strong>Payment info updated</strong></div>
+                        <small class="text-muted">You updated your payment information</small>
+                    </div>
+                    <small class="text-muted">${nowText}</small>
+                </li>
+            `;
+            const activityLog = document.getElementById('activityLog');
+            activityLog.insertAdjacentHTML('afterbegin', activityHtml);
+        } catch (error) {
+            console.error('Error saving payment info:', error);
+            alert('Failed to update payment information. Please try again.');
+        }
     }
     
     function changePassword() {
@@ -1090,54 +804,6 @@
     function saveNotificationPreferences() {
         // In a real implementation, this would save the notification preferences to the database
         console.log('Notification preferences updated');
-    }
-    
-    function upgradeToPremium() {
-        const cardNumber = document.getElementById('cardNumber').value;
-        const expiryDate = document.getElementById('expiryDate').value;
-        const cvv = document.getElementById('cvv').value;
-        const cardName = document.getElementById('cardName').value;
-        
-        if (!cardNumber || !expiryDate || !cvv || !cardName) {
-            alert('Please fill all payment fields');
-            return;
-        }
-        
-        // In a real implementation, this would process the payment and upgrade the subscription
-        alert('Congratulations! Your account has been upgraded to Premium.');
-        
-        // Close the modal
-        bootstrap.Modal.getInstance(document.getElementById('upgradePlanModal')).hide();
-        
-        // Update subscription display
-        const subscriptionTab = document.getElementById('subscription');
-        subscriptionTab.querySelector('.subscription-card').className = 'subscription-card subscription-premium';
-        subscriptionTab.querySelector('.subscription-header h5').textContent = 'Premium Plan';
-        subscriptionTab.querySelector('.subscription-body ul').innerHTML = `
-            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Unlimited events</li>
-            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Advanced analytics</li>
-            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Priority support</li>
-            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Custom branding</li>
-            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Early access to new features</li>
-        `;
-        
-        // Hide upsell card
-        subscriptionTab.querySelector('.upsell-card').style.display = 'none';
-        
-        // Add to activity log
-        const nowText = "Just now";
-        const activityHtml = `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <div><strong>Subscription upgraded</strong></div>
-                    <small class="text-muted">You upgraded to Premium plan</small>
-                </div>
-                <small class="text-muted">${nowText}</small>
-            </li>
-        `;
-        
-        const activityLog = document.getElementById('activityLog');
-        activityLog.insertAdjacentHTML('afterbegin', activityHtml);
     }
 </script>
 {% endblock %}

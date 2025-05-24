@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, send_from_directory, session, render_template, flash, redirect, url_for
+from flask import Blueprint, request, jsonify, send_from_directory, session, render_template, flash, redirect, url_for, make_response
 from models.models import db, Event, Registration, User, Notification
 from utils.email_service import send_email, notify_participants_about_exploration
 import os
@@ -11,6 +11,7 @@ import string
 from werkzeug.utils import secure_filename
 import json
 from datetime import datetime, timedelta
+import pdfkit  # You may need to install: pip install pdfkit
 
 # Fixing the URL prefix to ensure proper routing
 event_bp = Blueprint('event', __name__, url_prefix='/event')
@@ -50,10 +51,6 @@ def api_event_detail(event_id):
         event = Event.query.get(event_id)
         if event:
             event_data = event.to_dict()
-            # Get sub-events details if needed
-            include_sub_events = request.args.get('include_sub_events', 'false').lower() == 'true'
-            if include_sub_events and event.sub_events:
-                event_data['sub_events_data'] = [se.to_dict() for se in event.sub_events]
             return jsonify(event_data)
         return jsonify({'error': 'Event not found'}), 404
     except Exception as e:
@@ -158,11 +155,6 @@ def register_event_guest(event_id):
         # Check if seats available
         if event.seats_available <= 0:
             flash('Sorry, no seats available', 'danger')
-            return redirect(url_for('events_list'))
-            
-        # Check registration deadline
-        if event.registration_end_date and event.registration_end_date < datetime.now():
-            flash('Registration deadline has passed', 'danger')
             return redirect(url_for('events_list'))
             
         # Check if user already exists in the system
@@ -279,25 +271,6 @@ def create_event():
             end_date = data.get('end_date')
             end_time = data.get('end_time', '23:59')
             
-            # Legacy date support for backwards compatibility
-            date = data.get('date', start_date)
-            
-            # Handle price/fee
-            price = 0
-            is_free = data.get('is_free') == 'on'
-            if not is_free and data.get('price'):
-                try:
-                    price = float(data.get('price', 0))
-                except ValueError:
-                    price = 0
-            
-            # Handle tags (comma-separated)
-            tags = data.get('tags', '')
-            tag = data.get('tag', category)  # For backwards compatibility
-            
-            # Registration deadline 
-            registration_end_date = data.get('registration_end_date')
-            
             # Venue information - updated structure
             venue_name = data.get('venue_name')
             venue_address = data.get('venue_address')
@@ -344,25 +317,36 @@ def create_event():
                 "volunteers": int(data.get('req_volunteers', 0))
             }
                     
-            # Create new event
+            # ---
+            # Only start_date and end_date are used for event dates. The legacy 'date' field is deprecated and not used.
+            # ---
+            # Parse and validate date fields
+            try:
+                start_date_obj = datetime.strptime(data.get('start_date'), '%Y-%m-%d') if data.get('start_date') else None
+            except Exception:
+                start_date_obj = None
+            try:
+                end_date_obj = datetime.strptime(data.get('end_date'), '%Y-%m-%d') if data.get('end_date') else None
+            except Exception:
+                end_date_obj = None
+
+            # Use only the correct fields for event creation
             new_event = Event(
-                name=name,
-                date=date,
-                start_date=datetime.strptime(start_date, '%Y-%m-%d') if start_date else None,
-                end_date=datetime.strptime(end_date, '%Y-%m-%d') if end_date else None,
-                start_time=start_time,
-                end_time=end_time,
-                description=description,
-                tag=tag,
-                category=category,
+                name=data.get('name'),
+                start_date=start_date_obj,
+                end_date=end_date_obj,
+                start_time=data.get('start_time', '00:00'),
+                end_time=data.get('end_time', '23:59'),
+                description=data.get('description'),
+                tag=data.get('tag', data.get('category')),
+                category=data.get('category'),
                 venue=venue,
-                tags=tags,
-                price=price,
-                is_free=is_free,
-                seats_total=seats_total,
-                seats_available=seats_total,
-                registration_end_date=datetime.strptime(registration_end_date, '%Y-%m-%d') if registration_end_date else None,
-                is_featured=data.get('is_featured') == 'on',
+                venue_address=venue_address,
+                tags=data.get('tags', ''),
+                price=float(data.get('price', 0)) if not (data.get('is_free') == 'on') else 0,
+                is_free=(data.get('is_free') == 'on'),
+                seats_total=int(data.get('seats_total', 50)),
+                seats_available=int(data.get('seats_total', 50)),
                 parent_event_id=parent_id,
                 created_by=session.get('user_id'),
                 organiser_id=session.get('user_id'),
@@ -376,69 +360,52 @@ def create_event():
             os.makedirs(os.path.join('static/uploads/images'), exist_ok=True)
             os.makedirs(os.path.join('static/uploads/videos'), exist_ok=True)
             os.makedirs(os.path.join('static/uploads/brochures'), exist_ok=True)
-            
-            # Handle image upload
+
+            # Only event.name is used for the event title. Deprecated fields such as cover_image, gallery_images, schedule, is_featured, and event_title have been removed from the model and are not handled here.
+
+            # Ensure upload directories exist for supported file types
+            os.makedirs(os.path.join('static/uploads/images'), exist_ok=True)
+            os.makedirs(os.path.join('static/uploads/videos'), exist_ok=True)
+            os.makedirs(os.path.join('static/uploads/brochures'), exist_ok=True)
+
+            # Handle image upload (if provided)
             if 'image' in request.files and request.files['image'].filename:
-                # Save the image file
-                image_file = request.files['image']
-                filename = secure_filename(image_file.filename)
-                file_path = os.path.join('static/uploads/images', filename)
-                image_file.save(file_path)
-                new_event.image = file_path
-            
-            # Handle cover image upload
-            if 'cover_image' in request.files and request.files['cover_image'].filename:
-                cover_file = request.files['cover_image']
-                filename = secure_filename(cover_file.filename)
-                file_path = os.path.join('static/uploads/images', filename)
-                cover_file.save(file_path)
-                new_event.cover_image = file_path
-                
-            # Handle other uploads (video, brochure)
+                try:
+                    image_file = request.files['image']
+                    filename = secure_filename(image_file.filename)
+                    file_path = os.path.join('static/uploads/images', filename)
+                    image_file.save(file_path)
+                    new_event.image = file_path
+                except Exception as e:
+                    # Log and skip image upload errors
+                    print(f"Image upload failed: {str(e)}")
+
+            # Handle video upload (if provided)
             if 'video' in request.files and request.files['video'].filename:
-                video_file = request.files['video']
-                filename = secure_filename(video_file.filename)
-                file_path = os.path.join('static/uploads/videos', filename)
-                video_file.save(file_path)
-                new_event.video = file_path
-                
+                try:
+                    video_file = request.files['video']
+                    filename = secure_filename(video_file.filename)
+                    file_path = os.path.join('static/uploads/videos', filename)
+                    video_file.save(file_path)
+                    new_event.video = file_path
+                except Exception as e:
+                    print(f"Video upload failed: {str(e)}")
+
+            # Handle brochure upload (if provided)
             if 'brochure' in request.files and request.files['brochure'].filename:
-                brochure_file = request.files['brochure']
-                filename = secure_filename(brochure_file.filename)
-                file_path = os.path.join('static/uploads/brochures', filename)
-                brochure_file.save(file_path)
-                new_event.brochure = file_path
+                try:
+                    brochure_file = request.files['brochure']
+                    filename = secure_filename(brochure_file.filename)
+                    file_path = os.path.join('static/uploads/brochures', filename)
+                    brochure_file.save(file_path)
+                    new_event.brochure = file_path
+                except Exception as e:
+                    print(f"Brochure upload failed: {str(e)}")
                 
-            # Process sub-events if any
-            sub_events_data = {}
-            for key in data.keys():
-                if key.startswith('sub_events['):
-                    # Extract sub event index and field name from key format: sub_events[0][name]
-                    parts = key.replace('sub_events[', '').replace(']', '').split('[')
-                    if len(parts) == 2:
-                        idx, field = parts
-                        if idx not in sub_events_data:
-                            sub_events_data[idx] = {}
-                        sub_events_data[idx][field] = data.get(key)
-            
             # Add to events list
             db.session.add(new_event)
             db.session.commit()
             
-            # Create sub-events after main event is created
-            for idx, sub_event_data in sub_events_data.items():
-                # Create sub-event with same parent
-                sub_event = Event(
-                    name=sub_event_data.get('name'),
-                    description=sub_event_data.get('description'),
-                    category=category,
-                    parent_event_id=new_event.id,
-                    created_by=session.get('user_id'),
-                    organiser_id=session.get('user_id')
-                )
-                db.session.add(sub_event)
-            
-            db.session.commit()
             return jsonify({'success': True, 'event_id': new_event.id})
             
     except Exception as e:
@@ -461,14 +428,24 @@ def update_event(event_id):
         # Update fields
         if 'name' in data:
             event.name = data.get('name')
-        if 'date' in data:
-            event.date = data.get('date')
         if 'description' in data:
             event.description = data.get('description')
         if 'tag' in data:
             event.tag = data.get('tag')
         if 'fee' in data:
             event.fee = float(data.get('fee', 0))
+            
+        # Remove legacy 'date' field usage in event update
+        if 'start_date' in data:
+            try:
+                event.start_date = datetime.strptime(data.get('start_date'), '%Y-%m-%d')
+            except Exception:
+                event.start_date = None
+        if 'end_date' in data:
+            try:
+                event.end_date = datetime.strptime(data.get('end_date'), '%Y-%m-%d')
+            except Exception:
+                event.end_date = None
             
         # Handle file updates
         if 'image' in request.files and request.files['image'].filename:
@@ -557,9 +534,6 @@ def event_detail(event_id):
         parent_event = None
         if event.parent_event_id:
             parent_event = Event.query.get(event.parent_event_id)
-            
-        # Get sub-events if any
-        sub_events = Event.query.filter_by(parent_event_id=event_id).all()
         
         # Get the custom UI theme for registration
         custom_data = {}
@@ -585,14 +559,22 @@ def event_detail(event_id):
             ).first()
             is_registered = reg is not None
             
-        # Add current datetime for comparison with registration_end_date
+        # For event detail view, ensure only start_date and end_date are used
+        # Remove all usage of the legacy 'date' and registration_end_date fields
+        # Add current datetime for comparison if needed
         now = datetime.now()
+        
+        # Make sure all event properties are correctly initialized
+        # This ensures both free and paid events are displayed correctly
+        if not hasattr(event, 'is_free'):
+            event.is_free = True
+        if not hasattr(event, 'price') or event.price is None:
+            event.price = 0
             
         return render_template(
             'event_detail.html', 
             event=event, 
             parent_event=parent_event,
-            sub_events=sub_events,
             is_registered=is_registered,
             registration_theme=registration_theme,
             now=now,
@@ -617,8 +599,6 @@ def create_event_page():
         try:
             # Get form data
             name = request.form.get('name')
-            title = request.form.get('title')
-            date = request.form.get('date')
             start_date = request.form.get('start_date')
             start_time = request.form.get('start_time')
             end_date = request.form.get('end_date')
@@ -627,7 +607,6 @@ def create_event_page():
             category = request.form.get('category')
             description = request.form.get('description')
             venue = request.form.get('venue')
-            registration_end_date = request.form.get('registration_end_date')
             
             # Process pricing
             price = request.form.get('price', 0)
@@ -657,13 +636,21 @@ def create_event_page():
                 'resources_required': resources_required
             }
             
-            # Create new event
+            # Parse and validate date fields
+            try:
+                start_date_obj = datetime.strptime(start_date, '%Y-%m-%d') if start_date else None
+            except Exception:
+                start_date_obj = None
+            try:
+                end_date_obj = datetime.strptime(end_date, '%Y-%m-%d') if end_date else None
+            except Exception:
+                end_date_obj = None
+
+            # Create new event (do not use 'date' field)
             new_event = Event(
                 name=name,
-                title=title,
-                date=date,
-                start_date=datetime.strptime(start_date, '%Y-%m-%d') if start_date else None,
-                end_date=datetime.strptime(end_date, '%Y-%m-%d') if end_date else None,
+                start_date=start_date_obj,
+                end_date=end_date_obj,
                 start_time=start_time,
                 end_time=end_time,
                 tag=tag,
@@ -675,7 +662,6 @@ def create_event_page():
                 seats_available=request.form.get('seats_total', 0),
                 price=price,
                 is_free=is_free,
-                registration_end_date=datetime.strptime(registration_end_date, '%Y-%m-%d') if registration_end_date else None,
                 created_by=session.get('user_id'),
                 organiser_id=session.get('user_id'),
                 custom_data=json.dumps(custom_data)
@@ -690,16 +676,6 @@ def create_event_page():
                     image_path = os.path.join(get_upload_path('images'), filename)
                     image.save(image_path)
                     new_event.image = f'uploads/images/{filename}'
-                    
-            # Handle cover image upload 
-            if 'cover_image' in request.files and request.files['cover_image'].filename:
-                cover_image = request.files['cover_image']
-                if cover_image:
-                    filename = secure_filename(cover_image.filename)
-                    os.makedirs(get_upload_path('images'), exist_ok=True)
-                    cover_image_path = os.path.join(get_upload_path('images'), filename)
-                    cover_image.save(cover_image_path)
-                    new_event.cover_image = f'uploads/images/{filename}'
                     
             # Handle video upload
             if 'video' in request.files and request.files['video'].filename:
@@ -761,32 +737,36 @@ def register_event(event_id):
             flash('Sorry, no seats available', 'danger')
             return redirect(url_for('event.event_detail', event_id=event_id))
             
-        # Check registration deadline
-        if event.registration_end_date and event.registration_end_date < datetime.now():
-            flash('Registration deadline has passed', 'danger')
-            return redirect(url_for('event.event_detail', event_id=event_id))
-            
         # Create registration
         new_reg = Registration(
             event_id=event_id,
             user_id=session['user_id']
         )
-        
-        # Handle payment for paid events
+          # Handle payment for paid events
         if not event.is_free and event.price > 0:
-            # Placeholder for payment integration
+            # Set payment status to pending
             new_reg.payment_status = 'pending'
+            
+            # Update available seats
+            event.seats_available -= 1
+            
+            db.session.add(new_reg)
+            db.session.commit()
+            
+            # Redirect to payment page
+            return redirect(url_for('payment.process', registration_id=new_reg.id))
         else:
+            # Free event, mark as completed
             new_reg.payment_status = 'completed'
             
-        # Update available seats
-        event.seats_available -= 1
-        
-        db.session.add(new_reg)
-        db.session.commit()
-        
-        flash('Registration successful', 'success')
-        return redirect(url_for('event.event_detail', event_id=event_id))
+            # Update available seats
+            event.seats_available -= 1
+            
+            db.session.add(new_reg)
+            db.session.commit()
+            
+            flash('Registration successful', 'success')
+            return redirect(url_for('event.event_detail', event_id=event_id))
         
     except Exception as e:
         flash(f'Error registering for event: {str(e)}', 'danger')
@@ -917,25 +897,31 @@ def register_form(event_id, theme):
             flash('Sorry, no seats available', 'danger')
             return redirect(url_for('event.event_detail', event_id=event_id))
             
-        # Check registration deadline
-        if event.registration_end_date and event.registration_end_date < datetime.now():
-            flash('Registration deadline has passed', 'danger')
-            return redirect(url_for('event.event_detail', event_id=event_id))
-        
-        # Validate theme
-        if theme not in NEW_THEMES:
-            theme = 'minimalist'  # Default fallback theme
-        
-        # Get user information
-        user = User.query.get(session['user_id'])
-        
-        # Get the custom data if available
+        # Ensure event payment properties are set correctly
+        if not hasattr(event, 'is_free') or event.is_free is None:
+            event.is_free = True
+        if not hasattr(event, 'price') or event.price is None:
+            event.price = 0
+              # Get the custom data if available
         custom_data = {}
+        event_theme = 'minimalist'  # Default fallback theme
+        
         if event.custom_data:
             try:
                 custom_data = json.loads(event.custom_data)
+                # Get the theme from the event's custom data if available
+                event_theme = custom_data.get('registration_theme', 'minimalist')
             except:
                 pass
+        
+        # Always use the theme configured by the organizer
+        # This ensures the event's registration form maintains brand consistency
+        theme = event_theme
+        
+        print(f"DEBUG: Using theme {theme} for event {event_id}")
+        
+        # Get user information
+        user = User.query.get(session['user_id'])
         
         # Render the themed registration form
         return render_template(
@@ -1034,3 +1020,72 @@ def update_event_theme(event_id, theme):
     except Exception as e:
         flash(f'Error updating theme: {str(e)}', 'danger')
         return redirect(url_for('event.event_theme_selector', event_id=event_id))
+
+@event_bp.route('/download_ticket/<int:registration_id>')
+def download_ticket(registration_id):
+    """
+    Generate and download a ticket for a verified registration
+    """
+    try:
+        # Check if user is logged in
+        if 'user_id' not in session:
+            flash('Please log in to download your ticket', 'danger')
+            return redirect(url_for('auth.login'))
+        
+        # Get the registration
+        registration = Registration.query.get_or_404(registration_id)
+        
+        # Verify this is the user's registration or an organizer/admin
+        current_user_id = session.get('user_id')
+        current_user = User.query.get(current_user_id)
+        
+        # Check permissions - either the user's own registration or an organizer/admin
+        if (registration.user_id != current_user_id and 
+            current_user.role not in ['organiser', 'admin']):
+            flash('You do not have permission to access this ticket', 'danger')
+            return redirect(url_for('participant.dashboard'))
+        
+        # Check if payment is verified
+        if registration.payment_status != 'completed':
+            flash('Payment must be completed before downloading a ticket', 'warning')
+            return redirect(url_for('payment.process', registration_id=registration.id))
+        
+        # Get the event and user details
+        event = Event.query.get(registration.event_id)
+        user = User.query.get(registration.user_id)
+        
+        if not event or not user:
+            flash('Event or user information not found', 'danger')
+            return redirect(url_for('participant.dashboard'))
+        
+        # Generate a unique verification code for the ticket
+        verification_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        
+        # Create QR code data (combination of registration ID and verification code)
+        qr_data = f"REG-{registration.id}-{verification_code}"
+        
+        # Render the ticket template
+        rendered_template = render_template(
+            'ticket_template.html',
+            registration=registration,
+            event=event,
+            user=user,
+            verification_code=verification_code,
+            qr_data=qr_data
+        )
+        
+        # Create a PDF from the HTML (if pdfkit is installed and configured)
+        try:
+            pdf = pdfkit.from_string(rendered_template, False)
+            response = make_response(pdf)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename=ticket_{registration.id}.pdf'
+            return response
+        except Exception as e:
+            # Fallback to HTML if PDF generation fails
+            print(f"PDF generation failed: {str(e)}")
+            return rendered_template
+            
+    except Exception as e:
+        flash(f'Error generating ticket: {str(e)}', 'danger')
+        return redirect(url_for('participant.dashboard'))

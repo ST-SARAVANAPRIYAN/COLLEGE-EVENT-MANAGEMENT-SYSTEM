@@ -447,6 +447,57 @@
                 width: 50%;
             }
         }
+          /* Notifications styling */
+        .notification-items {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .notification-item {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #ddd;
+            transition: all 0.3s;
+        }
+        
+        .notification-item.unread {
+            background-color: rgba(26, 155, 224, 0.08);
+            border-left: 3px solid #1a9be0;
+            font-weight: 500;
+        }
+        
+        .notification-item.important {
+            background-color: rgba(255, 193, 7, 0.08);
+            border-left: 3px solid #ffc107;
+        }
+        
+        .notification-content p {
+            margin: 0 0 5px;
+        }
+        
+        .notification-time {
+            color: #777;
+            font-size: 12px;
+        }
+        
+        .mark-read-btn {
+            margin-top: 10px;
+            background: none;
+            border: 1px solid #1a9be0;
+            color: #1a9be0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .mark-read-btn:hover {
+            background-color: #1a9be0;
+            color: white;
+        }
         
         @media (max-width: 768px) {
             .dashboard-stats {
@@ -499,9 +550,8 @@
                 <p class="profile-email">{{ current_user.email }}</p>
             </div>
             
-            <ul class="nav-menu">
-                <li class="nav-menu-item">
-                    <a href="{{ url_for('participant.dashboard') }}" class="nav-menu-link active">
+            <ul class="nav-menu">                <li class="nav-menu-item">
+                    <a href="{{ url_for('participant.dashboard') }}" class="nav-menu-link active" id="dashboard-link" onclick="showDashboardSection('dashboard'); return false;">
                         <span class="nav-menu-icon">📊</span> Dashboard
                     </a>
                 </li>
@@ -509,35 +559,33 @@
                     <a href="#registered" class="nav-menu-link">
                         <span class="nav-menu-icon">📝</span> My Events
                     </a>
-                </li>
-                <li class="nav-menu-item">
-                    <a href="/participant/profile" class="nav-menu-link">
+                </li>                <li class="nav-menu-item">
+                    <a href="{{ url_for('participant.dashboard') }}" class="nav-menu-link" id="profile-link">
                         <span class="nav-menu-icon">👤</span> My Profile
                     </a>
                 </li>
                 <li class="nav-menu-item">
-                    <a href="/participant/certificates" class="nav-menu-link">
+                    <a href="{{ url_for('participant.dashboard') }}" class="nav-menu-link" id="certificates-link">
                         <span class="nav-menu-icon">🏆</span> Certificates
                     </a>
-                </li>
-                <li class="nav-menu-item">
-                    <a href="/participant/notifications" class="nav-menu-link">
+                </li>                <li class="nav-menu-item">
+                    <a href="{{ url_for('participant.dashboard') }}" class="nav-menu-link" id="notifications-link">
                         <span class="nav-menu-icon">🔔</span> Notifications
                     </a>
                 </li>
                 <li class="nav-menu-item">
-                    <a href="/participant/settings" class="nav-menu-link">
+                    <a href="{{ url_for('participant.dashboard') }}" class="nav-menu-link">
                         <span class="nav-menu-icon">⚙️</span> Settings
                     </a>
                 </li>
             </ul>
         </aside>
         
-        <main class="main-content">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Welcome, {{ current_user.name }}!</h1>
-                <p class="dashboard-subtitle">Here's what's happening with your events</p>
-            </div>
+        <main class="main-content">            <div id="dashboard-content">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Welcome, {{ current_user.name }}!</h1>
+                    <p class="dashboard-subtitle">Here's what's happening with your events</p>
+                </div>
             
             <div class="dashboard-stats">
                 <div class="stat-card">
@@ -568,10 +616,9 @@
                             <div class="event-content">
                                 <div>
                                     <span class="badge badge-primary">{{ event.category }}</span>
-                                </div>
-                                <h3 class="event-title">{{ event.title }}</h3>
+                                </div>                                <h3 class="event-title">{{ event.title }}</h3>
                                 <div class="event-info">
-                                    <div><span>📅</span> {{ event.date.strftime('%b %d, %Y') }}</div>
+                                    <div><span>📅</span> {{ event.date }}</div>
                                     <div><span>⏰</span> {{ event.time }}</div>
                                     <div><span>📍</span> {{ event.location }}</div>
                                 </div>
@@ -605,26 +652,24 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for registration in registrations %}
-                                <tr>
+                                {% for registration in registrations %}                                <tr>
                                     <td>{{ registration.event.title }}</td>
-                                    <td>{{ registration.event.date.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ registration.event.date }}</td>
                                     <td>{{ registration.event.time }}</td>
-                                    <td>{{ registration.event.location }}</td>
-                                    <td>
-                                        {% if registration.event.date < today %}
+                                    <td>{{ registration.event.location }}</td>                                    <td>
+                                        {% if registration.event.start_date and registration.event.start_date.date() < today %}
                                         <span class="badge badge-success">Completed</span>
-                                        {% elif registration.is_paid %}
+                                        {% elif registration.payment_status == 'completed' %}
                                         <span class="badge badge-primary">Confirmed</span>
+                                        {% elif registration.payment_status == 'verification_pending' %}
+                                        <span class="badge badge-info">Verification Pending</span>
+                                        {% elif registration.payment_status == 'rejected' %}
+                                        <span class="badge badge-danger">Payment Rejected</span>
                                         {% else %}
                                         <span class="badge badge-warning">Pending</span>
                                         {% endif %}
-                                    </td>
-                                    <td>
+                                    </td><td>
                                         <a href="{{ url_for('event.event_detail', event_id=registration.event.id) }}" class="btn btn-secondary">View</a>
-                                        {% if registration.event.date > today %}
-                                        <a href="{{ url_for('cancel_registration', event_id=registration.event.id) }}" class="btn btn-danger">Cancel</a>
-                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% else %}
@@ -633,8 +678,122 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                        </table>
+                        </table>                    </div>                </div>
+            </div>
+            </div>
+            
+            <!-- Profile section - initially hidden -->
+            <div id="profile-content" class="dashboard-card" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">My Profile</h2>
+                </div>
+                <div class="card-body">
+                    <div class="profile-details">
+                        <h3>Personal Information</h3>
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <p>{{ current_user.name }}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <p>{{ current_user.email }}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Role:</label>
+                            <p>{{ current_user.role|title }}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Contact Number:</label>
+                            <p>{{ current_user.contact_number or 'Not provided' }}</p>
+                        </div>
+                        <a href="#" class="btn btn-primary">Edit Profile</a>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Certificates section - initially hidden -->
+            <div id="certificates-content" class="dashboard-card" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">My Certificates</h2>
+                </div>
+                <div class="card-body">
+                    <div class="certificates-list">
+                        {% if stats.certificates > 0 %}
+                            <p>You have {{ stats.certificates }} certificate(s).</p>
+                            <!-- Certificate list would be dynamically loaded here -->
+                            <div class="certificate-item">
+                                <p>Certificate functionality coming soon.</p>
+                            </div>
+                        {% else %}
+                            <p>You don't have any certificates yet. Certificates are awarded after completing events.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notifications section - initially hidden -->
+            <div id="notifications-content" class="dashboard-card" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">My Notifications</h2>
+                </div>
+                <div class="card-body">
+                    <div id="notifications-list">
+                        <p>Loading notifications...</p>
+                    </div>
+                    <script>
+                        // Load notifications via AJAX
+                        document.getElementById('notifications-link')?.addEventListener('click', function() {
+                            fetch('{{ url_for("participant.get_my_notifications") }}')
+                                .then(response => response.json())
+                                .then(data => {
+                                    const notifList = document.getElementById('notifications-list');
+                                    if (data.length === 0) {
+                                        notifList.innerHTML = '<p>No notifications yet.</p>';
+                                        return;
+                                    }
+                                    
+                                    let html = '<div class="notification-items">';
+                                    data.forEach(notif => {
+                                        const isRead = notif.is_read ? 'read' : 'unread';
+                                        const isImportant = notif.is_important ? ' important' : '';
+                                        html += `
+                                            <div class="notification-item ${isRead}${isImportant}">
+                                                <div class="notification-content">
+                                                    <p>${notif.message}</p>
+                                                    <span class="notification-time">${new Date(notif.created_at).toLocaleString()}</span>
+                                                </div>
+                                                ${!notif.is_read ? `<button class="mark-read-btn" data-id="${notif.id}">Mark as read</button>` : ''}
+                                            </div>
+                                        `;
+                                    });
+                                    html += '</div>';
+                                    notifList.innerHTML = html;
+                                    
+                                    // Add event listeners for "Mark as read" buttons
+                                    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+                                        btn.addEventListener('click', function() {
+                                            const notifId = this.getAttribute('data-id');
+                                            fetch(`{{ url_for('participant.mark_notification_read', notification_id=0) }}`.replace('0', notifId), {
+                                                method: 'POST'
+                                            })
+                                            .then(response => response.json())
+                                            .then(result => {
+                                                if (result.success) {
+                                                    this.parentElement.classList.remove('unread');
+                                                    this.parentElement.classList.add('read');
+                                                    this.remove();
+                                                }
+                                            });
+                                        });
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Error fetching notifications:', error);
+                                    document.getElementById('notifications-list').innerHTML = 
+                                        '<p>Error loading notifications. Please try again later.</p>';
+                                });
+                        });
+                    </script>
                 </div>
             </div>
         </main>
@@ -644,16 +803,26 @@
         <div class="container">
             <p>&copy; 2025 College Event Management System</p>
         </div>
-    </footer>
-    
-    <script>
-        // Simple client-side routing for the sidebar menu
+    </footer><script>
+        // Enhanced client-side routing for the sidebar menu
         document.addEventListener('DOMContentLoaded', function() {
             const menuLinks = document.querySelectorAll('.nav-menu-link');
+            const currentPath = window.location.pathname;
             
+            // Handle dashboard link specifically
+            const dashboardLink = document.getElementById('dashboard-link');
+            if (dashboardLink) {
+                dashboardLink.addEventListener('click', function(e) {
+                    // Don't prevent default - allow normal navigation
+                    menuLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            }
+              // Handle other menu links
             menuLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    if (this.getAttribute('href').startsWith('#')) {
+                // Handle anchor links (in-page navigation)
+                if (link.getAttribute('href').startsWith('#')) {
+                    link.addEventListener('click', function(e) {
                         e.preventDefault();
                         const targetId = this.getAttribute('href').substring(1);
                         const targetElement = document.getElementById(targetId);
@@ -664,9 +833,54 @@
                         
                         menuLinks.forEach(l => l.classList.remove('active'));
                         this.classList.add('active');
-                    }
-                });
+                    });
+                }
             });
+            
+            // Handle profile, certificates and notifications navigation
+            document.getElementById('profile-link')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Show profile section and hide others
+                showDashboardSection('profile');
+                menuLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+            
+            document.getElementById('certificates-link')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Show certificates section and hide others
+                showDashboardSection('certificates');
+                menuLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+            
+            document.getElementById('notifications-link')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Show notifications section and hide others
+                showDashboardSection('notifications');
+                menuLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+            
+            // Function to show specific dashboard section
+            function showDashboardSection(section) {
+                // Hide all sections first
+                const sections = ['dashboard-content', 'profile-content', 'certificates-content', 'notifications-content'];
+                sections.forEach(s => {
+                    const el = document.getElementById(s);
+                    if (el) el.style.display = 'none';
+                });
+                
+                // Show the requested section
+                const sectionToShow = document.getElementById(`${section}-content`);
+                if (sectionToShow) {
+                    sectionToShow.style.display = 'block';
+                } else if (section === 'dashboard') {
+                    // Dashboard is the main content, make sure it's visible
+                    const dashboardContent = document.getElementById('dashboard-content');
+                    if (dashboardContent) dashboardContent.style.display = 'block';
+                }
+            }
         });
     </script>
 </body>

@@ -670,9 +670,7 @@
         </div>
         
         <div class="registration-info">
-            {% if event.registration_end_date and event.registration_end_date < current_date %}
-                <div class="registration-status status-closed">Registration Closed</div>
-            {% elif event.seats_available <= 0 %}
+            {% if event.seats_available <= 0 %}
                 <div class="registration-status status-closed">Sold Out</div>
             {% elif event.seats_available < 10 %}
                 <div class="registration-status status-limited">Limited Seats Available ({{ event.seats_available }})</div>
@@ -680,7 +678,7 @@
                 <div class="registration-status status-open">Registration Open</div>
             {% endif %}
             
-            {% if not is_registered and event.registration_end_date and event.registration_end_date >= current_date and event.seats_available > 0 %}
+            {% if not is_registered and event.seats_available > 0 %}
                 <a href="{{ url_for('event.register_form', event_id=event.id, theme='creative') }}" class="btn-creative">Register Now</a>
             {% elif is_registered %}
                 <p style="color: #2ed573; font-weight: 500;">You are already registered for this event.</p>

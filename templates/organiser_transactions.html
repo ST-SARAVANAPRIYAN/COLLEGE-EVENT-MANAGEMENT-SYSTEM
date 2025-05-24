@@ -1,0 +1,182 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}Payment Transactions{% endblock %}
+
+{% block page_title %}Payment Transactions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Transactions</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_transactions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Amount</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹{{ stats.total_amount|round(2) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-rupee-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                UPI Payments</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.upi_transactions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-mobile-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Online Payments</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.razorpay_transactions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-credit-card fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Payment Transactions</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                    aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Export Options:</div>
+                    <a class="dropdown-item" href="#" id="export-csv">
+                        <i class="fas fa-file-csv fa-sm fa-fw mr-2 text-gray-400"></i>
+                        Export as CSV
+                    </a>
+                    <a class="dropdown-item" href="#" id="export-pdf">
+                        <i class="fas fa-file-pdf fa-sm fa-fw mr-2 text-gray-400"></i>
+                        Export as PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if transactions %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="transactionsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Date</th>
+                            <th>Participant</th>
+                            <th>Event</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>                    <tbody>
+                        {% for registration, event, user in transactions %}
+                        <tr>
+                            <td>{{ registration.payment_id }}</td>
+                            <td>{{ registration.transaction_timestamp.strftime('%Y-%m-%d %H:%M') if registration.transaction_timestamp else 'N/A' }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ event.name }}</td>
+                            <td>₹{{ registration.amount|round(2) }}</td>
+                            <td>
+                                {% if registration.payment_method == 'upi' %}
+                                <span class="badge bg-info text-white">UPI</span>
+                                {% elif registration.payment_method == 'razorpay' %}
+                                <span class="badge bg-primary text-white">Razorpay</span>
+                                {% else %}
+                                <span class="badge bg-secondary text-white">{{ registration.payment_method }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if registration.payment_status == 'completed' %}
+                                <span class="badge bg-success text-white">Completed</span>
+                                {% else %}
+                                <span class="badge bg-warning text-white">{{ registration.payment_status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center my-4">
+                <img src="/static/images/no-data.svg" alt="No Transactions" style="max-width: 150px;">
+                <p class="mt-3 text-muted">No payment transactions found</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#transactionsTable').DataTable({
+        ordering: true,
+        order: [[1, 'desc']], // Sort by date column descending
+        pageLength: 25,
+        responsive: true,
+        dom: 'Bfrtip',
+        buttons: [
+            'copy', 'csv', 'excel', 'pdf'
+        ]
+    });
+    
+    $('#export-csv').click(function(e) {
+        e.preventDefault();
+        $('.buttons-csv').click();
+    });
+    
+    $('#export-pdf').click(function(e) {
+        e.preventDefault();
+        $('.buttons-pdf').click();
+    });
+});
+</script>
+{% endblock %}

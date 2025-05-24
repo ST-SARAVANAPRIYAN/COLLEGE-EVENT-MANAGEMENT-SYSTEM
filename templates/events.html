@@ -522,15 +522,17 @@
                                     {% endif %}
                                 </div>
                                 <div class="event-content">
+                                    <!-- Use the correct Flask endpoint for event details -->
                                     <a href="{{ url_for('event.event_detail', event_id=event.id) }}" class="event-title">{{ event.name }}</a>
                                     <div class="event-info">
                                         <p><i>📅</i> 
                                         {% if event.start_date %}
-                                            {{ event.start_date.strftime('%Y-%m-%d') }}
-                                        {% elif event.date %}
-                                            {{ event.date }}
+                                            {{ event.start_date.strftime('%b %d, %Y') }}
+                                            {% if event.end_date and event.end_date != event.start_date %}
+                                                - {{ event.end_date.strftime('%b %d, %Y') }}
+                                            {% endif %}
                                         {% else %}
-                                            TBA
+                                            <span class="text-muted">Date TBA</span>
                                         {% endif %}
                                         {% if event.start_time %}at {{ event.start_time }}{% endif %}</p>
                                         
@@ -539,18 +541,19 @@
                                         {% if event.custom_data %}
                                             {% set custom_data = event.custom_data | tojson | fromjson %}
                                         {% endif %}
-                                        
                                         {% if custom_data.venue_data and custom_data.venue_data.address %}
                                             {{ custom_data.venue_data.address }}
+                                        {% elif event.venue_address %}
+                                            {{ event.venue_address }}
                                         {% else %}
                                             {{ event.venue if event.venue else 'TBA' }}
                                         {% endif %}
                                         </p>
                                     </div>
-                                    <p style="flex-grow:1; margin-bottom:20px;">{{ event.description[:80] }}{% if event.description and event.description|length > 80 %}...{% endif %}</p>
-                                    <div class="event-footer">
+                                    <p style="flex-grow:1; margin-bottom:20px;">{{ event.description[:80] }}{% if event.description and event.description|length > 80 %}...{% endif %}</p>                                    <div class="event-footer">
                                         <span class="event-price">{% if not event.is_free and event.price > 0 %}₹{{ event.price }}{% else %}Free{% endif %}</span>
-                                        <a href="{{ url_for('event.event_detail', event_id=event.id) }}" class="btn btn-primary">View Details</a>
+                                        <a href="{{ url_for('event.event_detail', event_id=event.id) }}" class="btn btn-primary" 
+                           data-event-id="{{ event.id }}">View Details</a>
                                     </div>
                                 </div>
                             </div>
@@ -640,6 +643,14 @@
                     navbarToggler.style.display = 'none';
                     navbarNav.style.display = 'flex';
                 }
+            });
+              // --- Event button click handler ---
+            const detailButtons = document.querySelectorAll('.btn.btn-primary[data-event-id]');
+            detailButtons.forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    // Direct navigation without popup
+                    window.location.href = btn.getAttribute('href');
+                });
             });
         });
     </script>

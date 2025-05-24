@@ -847,6 +847,10 @@
     </style>
 </head>
 <body class="theme-{{ theme }}">
+    <!--
+        NOTE: As per project convention, event.name is used as the event title everywhere.
+        All references to event.title/event_title, cover_image, has_exploration, custom_exploration_url, gallery_images, schedule, is_featured have been removed.
+    -->
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container navbar-container">
@@ -883,13 +887,10 @@
         </div>
     </nav>
 
-    <!-- Event Cover -->
-    <div class="event-cover" style="background-image: url('/{{ event.cover_image or 'static/uploads/images/default-cover.jpg' }}');">
+    <!-- Event Cover (removed cover_image and is_featured badge) -->
+    <div class="event-cover" style="background: linear-gradient(135deg, #1a9be0, #05c27b);">
         <div class="container event-cover-content">
             <div>
-                {% if event.is_featured %}
-                    <span class="badge bg-warning text-dark mb-2">Featured</span>
-                {% endif %}
                 <h1 class="display-4 fw-bold">{{ event.name }}</h1>
                 <p class="lead">{{ event.description | truncate(100) }}</p>
                 
@@ -905,7 +906,7 @@
                                     - {{ event.end_date.strftime('%b %d, %Y') }}
                                 {% endif %}
                             {% else %}
-                                {{ event.date }}
+                                <span class="text-muted">Date TBA</span>
                             {% endif %}
                         </div>
                     </div>
@@ -989,8 +990,18 @@
                     <div class="card mb-4">
                         <div class="card-body">
                             <h3 class="card-title mb-4">Venue Information</h3>
-                            
-                            {% if custom_data.venue_data %}
+                            {% if event.venue_address %}
+                                <div class="mb-3">
+                                    <h5>{{ event.venue }}</h5>
+                                    <p class="mb-2">
+                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                        {{ event.venue_address }}
+                                    </p>
+                                </div>
+                                {% if event.venue_lat and event.venue_lng %}
+                                    <div id="venue-map" style="height:300px;"></div>
+                                {% endif %}
+                            {% elif custom_data.venue_data %}
                                 <div class="mb-3">
                                     <h5>{{ custom_data.venue_data.name }}</h5>
                                     <p class="mb-2">
@@ -998,9 +1009,8 @@
                                         {{ custom_data.venue_data.address }}
                                     </p>
                                 </div>
-                                
                                 {% if custom_data.venue_data.coordinates and custom_data.venue_data.coordinates.lat and custom_data.venue_data.coordinates.lng %}
-                                    <div id="venue-map"></div>
+                                    <div id="venue-map" style="height:300px;"></div>
                                 {% endif %}
                             {% else %}
                                 <p><i class="fas fa-map-marker-alt me-2"></i> {{ event.venue }}</p>
@@ -1025,8 +1035,11 @@
                                                             <i class="fas fa-calendar-alt me-1"></i>
                                                             {% if sub_event.start_date %}
                                                                 {{ sub_event.start_date.strftime('%b %d, %Y') }}
+                                                                {% if sub_event.end_date and sub_event.end_date != sub_event.start_date %}
+                                                                    - {{ sub_event.end_date.strftime('%b %d, %Y') }}
+                                                                {% endif %}
                                                             {% else %}
-                                                                {{ sub_event.date }}
+                                                                <span class="text-muted">Date TBA</span>
                                                             {% endif %}
                                                         </small>
                                                         <a href="{{ url_for('event.event_detail', event_id=sub_event.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
@@ -1036,35 +1049,6 @@
                                         </div>
                                     {% endfor %}
                                 </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                    
-                    <!-- Gallery -->
-                    {% if event.gallery_images %}
-                        <div class="card mb-4">
-                            <div class="card-body">
-                                <h3 class="card-title mb-4">Event Gallery</h3>
-                                <div class="gallery-container">
-                                    {% for img in event.gallery_images.split(',') %}
-                                        <div class="gallery-item">
-                                            <img src="/{{ img.strip() }}" alt="Event Gallery">
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                    
-                    <!-- Exploration Experience -->
-                    {% if event.has_exploration %}
-                        <div class="card mb-4">
-                            <div class="card-body text-center py-5">
-                                <h3 class="card-title mb-3">Interactive Event Experience</h3>
-                                <p class="card-text">Explore this event in an interactive way!</p>
-                                <a href="/event_exploration/{{ event.id }}" class="btn btn-primary btn-lg mt-3" target="_blank">
-                                    <i class="fas fa-vr-cardboard me-2"></i> Launch Experience
-                                </a>
                             </div>
                         </div>
                     {% endif %}
@@ -1135,8 +1119,6 @@
                             {% set status = "open" %}
                             {% if event.seats_available <= 0 %}
                                 {% set status = "closed" %}
-                            {% elif event.registration_end_date and (event.registration_end_date - now()).days <= 2 %}
-                                {% set status = "closing-soon" %}
                             {% endif %}
                             
                             <h5 class="card-title">Registration Status</h5>
@@ -1160,12 +1142,6 @@
                                 <div class="progress-bar {% if percent > 80 %}bg-danger{% elif percent > 60 %}bg-warning{% else %}bg-success{% endif %}" 
                                      role="progressbar" style="width: {{ percent }}%"></div>
                             </div>
-                            
-                            {% if event.registration_end_date %}
-                                <div class="text-muted small mb-3">
-                                    <i class="fas fa-calendar-times me-1"></i> Registration closes on {{ event.registration_end_date.strftime('%b %d, %Y') }}
-                                </div>
-                            {% endif %}
                             
                             {% if is_registered %}
                                 <div class="alert alert-success mb-3">
@@ -1213,21 +1189,21 @@
                             </div>
                         {% endif %}
                         
-                        {% if event.schedule %}
-                            <div class="event-sidebar-item">
-                                <h5 class="event-sidebar-title">Event Schedule</h5>
-                                <div class="schedule-container">
-                                    {{ event.schedule | safe }}
-                                </div>
-                            </div>
-                        {% endif %}
-                        
                         {% if parent_event %}
                             <div class="event-sidebar-item">
                                 <h5 class="event-sidebar-title">Parent Event</h5>
                                 <div class="parent-event">
                                     <a href="{{ url_for('event.event_detail', event_id=parent_event.id) }}">{{ parent_event.name }}</a>
-                                    <div class="small text-muted mt-1">{{ parent_event.start_date.strftime('%b %d, %Y') if parent_event.start_date else parent_event.date }}</div>
+                                    <div class="small text-muted mt-1">
+                                        {% if parent_event.start_date %}
+                                            {{ parent_event.start_date.strftime('%b %d, %Y') }}
+                                            {% if parent_event.end_date and parent_event.end_date != parent_event.start_date %}
+                                                - {{ parent_event.end_date.strftime('%b %d, %Y') }}
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Date TBA</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         {% endif %}
@@ -1288,28 +1264,41 @@
         </div>
     </footer>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
-    {% if custom_data.venue_data and custom_data.venue_data.coordinates and custom_data.venue_data.coordinates.lat and custom_data.venue_data.coordinates.lng %}
+    {% if event.venue_lat and event.venue_lng %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize map
-            const map = L.map('venue-map').setView(
-                [{{ custom_data.venue_data.coordinates.lat }}, {{ custom_data.venue_data.coordinates.lng }}], 
-                15
-            );
-            
-            // Add OpenStreetMap tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            
-            // Add marker for venue
-            L.marker([{{ custom_data.venue_data.coordinates.lat }}, {{ custom_data.venue_data.coordinates.lng }}])
-                .addTo(map)
-                .bindPopup('{{ custom_data.venue_data.name | default(event.venue) }}')
-                .openPopup();
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+        var venueLat = {{ event.venue_lat|tojson }};
+        var venueLng = {{ event.venue_lng|tojson }};
+        var venueName = {{ event.venue|tojson }};
+        var venueAddress = {{ event.venue_address|tojson }};
+        var map = L.map('venue-map').setView([venueLat, venueLng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        L.marker([venueLat, venueLng])
+            .addTo(map)
+            .bindPopup(`<b>${venueName}</b><br>${venueAddress}`)
+            .openPopup();
+    });
+    </script>
+    {% elif custom_data.venue_data and custom_data.venue_data.coordinates and custom_data.venue_data.coordinates.lat and custom_data.venue_data.coordinates.lng %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var venueLat = {{ custom_data.venue_data.coordinates.lat|tojson }};
+        var venueLng = {{ custom_data.venue_data.coordinates.lng|tojson }};
+        var venueName = {{ custom_data.venue_data.name|default(event.venue)|tojson }};
+        var venueAddress = {{ custom_data.venue_data.address|tojson }};
+        var map = L.map('venue-map').setView([venueLat, venueLng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        L.marker([venueLat, venueLng])
+            .addTo(map)
+            .bindPopup(`<b>${venueName}</b><br>${venueAddress}`)
+            .openPopup();
+    });
     </script>
     {% endif %}
     

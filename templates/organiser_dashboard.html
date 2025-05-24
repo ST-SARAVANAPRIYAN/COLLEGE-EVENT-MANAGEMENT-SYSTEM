@@ -152,6 +152,13 @@
         </div>
     </div>
     
+    <!-- Pending Deallocations -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div id="pendingDeallocations" class="alert alert-warning" style="display:none;"></div>
+        </div>
+    </div>
+
     <!-- Content row -->
     <div class="row">
         <!-- Recent events and activity -->
@@ -190,8 +197,7 @@
             <div class="card custom-card">
                 <div class="card-title">
                     <h5>Quick Access</h5>
-                </div>
-                <div class="card-body p-0">
+                </div>                <div class="card-body p-0">
                     <a href="{{ url_for('organiser.create_event') }}" class="text-decoration-none">
                         <div class="quick-action d-flex align-items-center p-3">
                             <div class="quick-action-icon bg-primary">
@@ -212,6 +218,18 @@
                             <div>
                                 <h6 class="mb-0">Send Notification</h6>
                                 <small class="text-muted">Notify participants about events</small>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('organiser.upi_verification') }}" class="text-decoration-none">
+                        <div class="quick-action d-flex align-items-center p-3">
+                            <div class="quick-action-icon bg-success">
+                                <i class="fas fa-money-check-alt"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">UPI Payments</h6>
+                                <small class="text-muted">Verify pending UPI payments</small>
                             </div>
                         </div>
                     </a>
@@ -242,6 +260,33 @@
                         <p class="mt-2">Loading your events...</p>
                     </div>
                 </div>
+            </div>              <!-- UPI Payments Summary Card -->
+            <div class="card custom-card">
+                <div class="card-title d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-money-check-alt me-2"></i> UPI Payments</h5>
+                    <a href="{{ url_for('organiser.upi_verification') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-6 border-end">
+                            <h3 id="pendingUpiCount">
+                                {% if pending_payments %}
+                                {{ pending_payments|length }}
+                                {% else %}
+                                0
+                                {% endif %}
+                            </h3>
+                            <p class="text-muted mb-0">Pending Verification</p>
+                        </div>
+                        <div class="col-6">
+                            <h3 id="verifiedUpiCount">--</h3>
+                            <p class="text-muted mb-0">Verified Today</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('organiser.upi_verification') }}" class="btn btn-success btn-sm mt-3">
+                        <i class="fas fa-check-circle me-1"></i> Verify Payments
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -260,6 +305,9 @@
         
         // Initialize analytics chart
         initializeAnalyticsChart();
+
+        // Load pending deallocations
+        loadPendingDeallocations();
     });
     
     // Function to load dashboard statistics
@@ -444,6 +492,55 @@
         }
         
         return result;
+    }
+
+    // Function to load pending deallocations
+    async function loadPendingDeallocations() {
+        try {
+            const response = await fetch('/api/organiser/pending-deallocations');
+            if (!response.ok) return;
+            const data = await response.json();
+            const container = document.getElementById('pendingDeallocations');
+            if (data.success && data.allocations && data.allocations.length > 0) {
+                let html = '<strong>Pending Resource Deallocation:</strong><ul>';
+                data.allocations.forEach(a => {
+                    html += `<li>${a.resource_name} (Event: ${a.event_name}, Quantity: ${a.quantity}) <button class='btn btn-sm btn-success ms-2' onclick='confirmDeallocate(${a.allocation_id})'>Confirm Return</button></li>`;
+                });
+                html += '</ul>';
+                container.innerHTML = html;
+                container.style.display = '';
+            } else {
+                container.style.display = 'none';
+            }
+        } catch (e) {
+            // Hide on error
+            document.getElementById('pendingDeallocations').style.display = 'none';
+        }
+    }
+
+    // Function to confirm deallocation
+    async function confirmDeallocate(allocationId) {
+        const result = await Swal.fire({
+            title: 'Confirm Deallocation',
+            text: 'Are you sure you want to return this resource?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, return',
+            cancelButtonText: 'Cancel'
+        });
+        if (!result.isConfirmed) return;
+        try {
+            const response = await fetch(`/api/resource-allocations/${allocationId}/deallocate`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Resource Returned', text: data.message });
+                loadPendingDeallocations();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Could not deallocate resource.' });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to deallocate resource.' });
+        }
     }
 </script>
 {% endblock %}

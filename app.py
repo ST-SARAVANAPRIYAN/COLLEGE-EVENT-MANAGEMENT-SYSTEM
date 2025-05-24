@@ -14,6 +14,7 @@ from modules.organiser import organiser_bp
 from modules.participant import participant_bp
 from modules.payment import payment_bp
 from modules.api_organiser import api_organiser_bp
+from modules.api_profile import api_profile_bp
 
 # Create Flask application
 app = Flask(__name__)
@@ -56,6 +57,7 @@ app.register_blueprint(organiser_bp)
 app.register_blueprint(participant_bp)
 app.register_blueprint(payment_bp)
 app.register_blueprint(api_organiser_bp)
+app.register_blueprint(api_profile_bp)
 
 # Create upload directories if they don't exist
 for dir_path in ['static/uploads/images', 'static/uploads/videos', 'static/uploads/brochures']:
@@ -66,11 +68,7 @@ for dir_path in ['static/uploads/images', 'static/uploads/videos', 'static/uploa
 def home():
     try:
         # Get featured events for the homepage
-        featured_events = Event.query.filter_by(is_featured=True).order_by(Event.start_date.desc()).limit(6).all()
-        
-        # If no featured events, get the most recent ones
-        if not featured_events:
-            featured_events = Event.query.order_by(Event.start_date.desc()).limit(6).all()
+        featured_events = Event.query.order_by(Event.start_date.desc()).limit(6).all()
         
         return render_template('index.html', featured_events=featured_events)
     except Exception as e:
@@ -87,6 +85,7 @@ def events_list():
         date_filter = request.args.get('date', '')
         status = request.args.get('status', '')
         search = request.args.get('search', '')
+        payment_filter = request.args.get('payment', '')  # Added filter for payment type
         
         # Start with base query
         query = Event.query
@@ -94,6 +93,13 @@ def events_list():
         # Apply filters
         if category:
             query = query.filter_by(category=category)
+            
+        # Apply payment filter if specified
+        if payment_filter:
+            if payment_filter == 'free':
+                query = query.filter_by(is_free=True)
+            elif payment_filter == 'paid':
+                query = query.filter_by(is_free=False)
         
         if date_filter:
             today = datetime.now().date()
@@ -113,16 +119,11 @@ def events_list():
             today = datetime.now().date()
             if status == 'open':
                 query = query.filter(
-                    ((Event.registration_end_date.is_(None)) | 
-                     (db.func.date(Event.registration_end_date) >= today)),
                     Event.seats_available > 0
                 )
             elif status == 'closed':
                 query = query.filter(
-                    db.or_(
-                        db.and_(Event.registration_end_date.isnot(None), db.func.date(Event.registration_end_date) < today),
-                        Event.seats_available <= 0
-                    )
+                    Event.seats_available <= 0
                 )
         
         if search:
@@ -172,11 +173,15 @@ def register_event(event_id):
         # Get the event
         event = Event.query.get_or_404(event_id)
         
+        # Ensure event payment properties are set correctly
+        if not hasattr(event, 'is_free') or event.is_free is None:
+            event.is_free = True
+        if not hasattr(event, 'price') or event.price is None:
+            event.price = 0
+        
         # Check if registration is open
         current_date = datetime.now().date()
-        if event.registration_end_date and event.registration_end_date < current_date:
-            flash('Registration for this event has closed', 'error')
-            return redirect(url_for('event.event_detail', event_id=event_id))
+        # Removed registration_end_date check
         
         # Check if seats are available
         if event.seats_available <= 0:
@@ -193,11 +198,11 @@ def register_event(event_id):
             flash('You are already registered for this event', 'info')
             return redirect(url_for('participant.dashboard'))
         
-        # Create new registration
+        # Create new registration with appropriate payment status
         new_registration = Registration(
             event_id=event_id,
             user_id=current_user.id,
-            payment_status='pending' if event.price > 0 else 'completed'
+            payment_status='pending' if not event.is_free and event.price > 0 else 'completed'
         )
         
         # Update available seats

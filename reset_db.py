@@ -21,13 +21,24 @@ with app.app_context():
         
         # Get a database connection
         conn = db.engine.connect()
-        
-        # Disable foreign key checks temporarily
+          # Disable foreign key checks temporarily
         conn.execute(text("SET FOREIGN_KEY_CHECKS=0;"))
         
         try:
-            # Drop all tables
-            db.drop_all()
+            # Instead of using SQLAlchemy's drop_all, we'll manually drop tables in the correct order
+            # First get a list of all tables
+            result = conn.execute(text("SHOW TABLES"))
+            tables = [row[0] for row in result.fetchall()]
+            print(f"Tables found: {tables}")
+            
+            # Drop each table individually
+            for table in tables:
+                try:
+                    print(f"Dropping table {table}...")
+                    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+                except Exception as e:
+                    print(f"Could not drop table {table}: {str(e)}")
+            
             print("Creating new tables...")
             db.create_all()
             
@@ -39,14 +50,54 @@ with app.app_context():
             
             # Create sample users with different roles
             users = [
-                User(name="System Admin", email="admin@example.com", password=generate_password_hash("admin123"), role="admin"),
-                User(name="Organiser User", email="organiser@example.com", password=generate_password_hash("organiser123"), role="organiser"),
-                User(name="Student 1", email="student1@example.com", password=generate_password_hash("student123"), role="participant"),
-                User(name="Student 2", email="student2@example.com", password=generate_password_hash("student123"), role="participant"),
-                User(name="Faculty Member", email="faculty@example.com", password=generate_password_hash("faculty123"), role="participant")
-            ]
+                User(name="System Admin", email="admin@example.com", password=generate_password_hash("1234567890"), role="admin"),
+                User(name="Organiser User", email="organiser@example.com", password=generate_password_hash("1234567890"), role="organiser"),
+                User(name="SARAVANA", email="saravanapriyanst@gmail.com", password=generate_password_hash("1234567890"), role="participant"),
+]
             db.session.add_all(users)
             db.session.commit()
+            
+            # Example: Add a sample event with a non-null venue_address (if you add events here)
+            # from models.models import Event
+            # sample_event = Event(
+            #     name="Sample Event",
+            #     title="Sample Event",
+            #     date="2025-05-01",
+            #     start_date=datetime(2025, 5, 1, 10, 0),
+            #     end_date=datetime(2025, 5, 1, 18, 0),
+            #     start_time="10:00",
+            #     end_time="18:00",
+            #     description="A sample event for testing.",
+            #     tag="technical",
+            #     category="technical",
+            #     venue="Main Hall",
+            #     venue_lat=13.085631,
+            #     venue_lng=80.219353,
+            #     venue_address="123 College Street, Campus Area",  # Not null
+            #     image=None,
+            #     cover_image=None,
+            #     video=None,
+            #     brochure=None,
+            #     has_exploration=False,
+            #     custom_exploration_url=None,
+            #     gallery_images=None,
+            #     tags="",
+            #     schedule=None,
+            #     price=0.0,
+            #     is_free=True,
+            #     seats_total=100,
+            #     seats_available=100,
+            #     registration_end_date=None,
+            #     is_featured=False,
+            #     parent_event_id=None,
+            #     created_at=datetime.utcnow(),
+            #     created_by=1,
+            #     organiser_id=2,
+            #     custom_data='{"registration_theme": "minimalist"}',
+            #     ui_theme='creative',
+            # )
+            # db.session.add(sample_event)
+            # db.session.commit()
             
             print("Sample user accounts added successfully!")
             print("Database tables have been recreated successfully!")

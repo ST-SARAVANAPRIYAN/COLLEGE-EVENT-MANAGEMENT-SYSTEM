@@ -1,0 +1,193 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}CEMS - UPI Payment Verification{% endblock %}
+
+{% block page_title %}UPI Payment Verification{% endblock %}
+
+{% block extra_styles %}
+.verification-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.payment-list-item {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.payment-list-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payment-details {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.payment-status {
+    min-width: 120px;
+    text-align: center;
+}
+
+.payment-actions {
+    min-width: 100px;
+    text-align: right;
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.filters {
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card verification-card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-money-check-alt me-2"></i> UPI Payments to Verify</h5>
+                    {% if pending_payments %}
+                    <span class="badge bg-warning">{{ pending_payments|length }}</span>
+                    {% else %}
+                    <span class="badge bg-success">0</span>
+                    {% endif %}
+                </div>
+                
+                <div class="filters">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="paymentSearch" class="form-control" placeholder="Search by name or event...">
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary active" data-filter="all">All</button>
+                                <button type="button" class="btn btn-outline-primary" data-filter="pending">Pending</button>
+                                <button type="button" class="btn btn-outline-primary" data-filter="verification_pending">Verification Pending</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if pending_payments %}
+                    <div class="list-group list-group-flush" id="payment-list">
+                        {% for registration, event, user in pending_payments %}
+                        <div class="list-group-item payment-list-item" data-status="{{ registration.payment_status }}" data-name="{{ user.name|lower }}" data-event="{{ event.name|lower }}">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6 class="mb-1">{{ user.name }} <small class="text-muted">for</small> {{ event.name }}</h6>
+                                    <div class="payment-details mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-rupee-sign"></i> Amount: ₹{{ event.price }}
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="far fa-calendar-alt"></i> Registered: {{ registration.registration_date.strftime('%Y-%m-%d') }}
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="far fa-clock"></i> Time: {{ registration.registration_date.strftime('%H:%M') }}
+                                        </small>
+                                    </div>
+                                    {% if registration.payment_reference %}
+                                    <div class="mb-2">
+                                        <span class="badge bg-light text-dark">Reference ID: {{ registration.payment_reference }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 d-flex justify-content-end align-items-center">
+                                    <div class="payment-status me-3">
+                                        {% if registration.payment_status == 'verification_pending' %}
+                                        <span class="badge bg-info">Awaiting verification</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="payment-actions">
+                                        <a href="{{ url_for('payment.verify_upi_payment', registration_id=registration.id) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-check me-1"></i> Verify
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle mb-3"></i>
+                        <h5>No UPI Payments to Verify</h5>
+                        <p class="text-muted">All UPI payments have been processed. Check back later for new payments.</p>
+                        <a href="{{ url_for('organiser.dashboard') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search functionality
+        const searchInput = document.getElementById('paymentSearch');
+        if(searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const searchValue = this.value.toLowerCase();
+                const paymentItems = document.querySelectorAll('#payment-list .payment-list-item');
+                
+                paymentItems.forEach(item => {
+                    const name = item.getAttribute('data-name');
+                    const event = item.getAttribute('data-event');
+                    
+                    if(name.includes(searchValue) || event.includes(searchValue)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Filter functionality
+        const filterButtons = document.querySelectorAll('[data-filter]');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Toggle active state
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const filterValue = this.getAttribute('data-filter');
+                const paymentItems = document.querySelectorAll('#payment-list .payment-list-item');
+                
+                paymentItems.forEach(item => {
+                    if(filterValue === 'all' || item.getAttribute('data-status') === filterValue) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

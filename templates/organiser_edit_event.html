@@ -1,0 +1,855 @@
+{% extends 'organiser_base.html' %}
+
+{% block title %}CEMS - Edit Event{% endblock %}
+
+{% block page_title %}Edit Event{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.10/dist/esri-leaflet.js"></script>
+<script src="https://unpkg.com/esri-leaflet-geocoder@3.1.4/dist/esri-leaflet-geocoder.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder@3.1.4/dist/esri-leaflet-geocoder.css">
+{% endblock %}
+
+{% block extra_styles %}
+.form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.form-section-title {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: bold;
+}
+
+.form-section-description {
+    margin-bottom: 1rem;
+    color: #6c757d;
+}
+
+.form-card {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.event-thumbnail {
+    width: 200px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+#map {
+    height: 350px;
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.map-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.location-preview {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    display: none;
+}
+
+.location-preview.active {
+    display: block;
+}
+
+.sub-events-container {
+    margin-top: 1rem;
+}
+
+.sub-event-card {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    position: relative;
+    background-color: #f8f9fa;
+}
+
+.remove-sub-event {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    cursor: pointer;
+    color: #dc3545;
+    z-index: 10;
+}
+
+.sub-event-tabs {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.tab {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+    border-bottom: 2px solid #3e64ff;
+    color: #3e64ff;
+    font-weight: bold;
+}
+
+.theme-preview {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.theme-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.theme-option {
+    width: 100px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.theme-thumbnail {
+    width: 100px;
+    height: 60px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.theme-option.selected .theme-thumbnail {
+    border-color: #3e64ff;
+}
+
+.preview-frame {
+    width: 100%;
+    height: 500px;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-data-editor {
+    height: 200px;
+    font-family: monospace;
+}
+
+.schedule-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    position: relative;
+    background-color: white;
+}
+
+.schedule-item .remove-schedule {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    cursor: pointer;
+    color: #dc3545;
+}
+
+.gallery-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.gallery-image-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.remove-gallery-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: #dc3545;
+}
+
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    display: none;
+}
+
+.spinner-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Edit Event</h2>
+        <div>
+            <a href="{{ url_for('organiser.events') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Events
+            </a>
+            <button type="button" id="saveEventBtn" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+    </div>    <form id="editEventForm" method="POST" action="/api/organiser/events/update/{{ event.id }}" enctype="multipart/form-data">
+        <input type="hidden" id="eventId" name="event_id" value="{{ event.id }}">
+        
+        <!-- Basic Information -->
+        <div class="form-section">
+            <div class="form-section-title">Basic Information</div>
+            <div class="form-section-description">Provide the essential details about your event.</div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="eventName" class="form-label">Event Name*</label>
+                    <input type="text" class="form-control" id="eventName" name="name" required value="{{ event.name }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="eventTitle" class="form-label">Display Title</label>
+                    <input type="text" class="form-control" id="eventTitle" name="title" value="{{ event.title }}">
+                    <small class="text-muted">Optional title for display purposes. If not provided, event name will be used.</small>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">Select category...</option>
+                        <option value="Conference" {% if event.category == 'Conference' %}selected{% endif %}>Conference</option>
+                        <option value="Workshop" {% if event.category == 'Workshop' %}selected{% endif %}>Workshop</option>
+                        <option value="Seminar" {% if event.category == 'Seminar' %}selected{% endif %}>Seminar</option>
+                        <option value="Exhibition" {% if event.category == 'Exhibition' %}selected{% endif %}>Exhibition</option>
+                        <option value="Concert" {% if event.category == 'Concert' %}selected{% endif %}>Concert</option>
+                        <option value="Festival" {% if event.category == 'Festival' %}selected{% endif %}>Festival</option>
+                        <option value="Networking" {% if event.category == 'Networking' %}selected{% endif %}>Networking</option>
+                        <option value="Sports" {% if event.category == 'Sports' %}selected{% endif %}>Sports</option>
+                        <option value="Other" {% if event.category == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="eventTag" class="form-label">Tag</label>
+                    <input type="text" class="form-control" id="eventTag" name="tag" value="{{ event.tag }}">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="eventDescription" class="form-label">Event Description</label>
+                    <textarea class="form-control" id="eventDescription" name="description" rows="5">{{ event.description }}</textarea>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="eventTags" class="form-label">Tags (comma-separated)</label>
+                    <input type="text" class="form-control" id="eventTags" name="tags" value="{{ event.tags }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- Date and Time -->
+        <div class="form-section">
+            <div class="form-section-title">Date and Time</div>
+            <div class="form-section-description">Set when your event will take place.</div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="startDate" class="form-label">Start Date*</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date" required value="{{ event.start_date.strftime('%Y-%m-%d') if event.start_date else '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date" value="{{ event.end_date.strftime('%Y-%m-%d') if event.end_date else '' }}">
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="startTime" class="form-label">Start Time</label>
+                    <input type="time" class="form-control" id="startTime" name="start_time" value="{{ event.start_time }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="endTime" class="form-label">End Time</label>
+                    <input type="time" class="form-control" id="endTime" name="end_time" value="{{ event.end_time }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- Location -->
+        <div class="form-section">
+            <div class="form-section-title">Location</div>
+            <div class="form-section-description">Specify where your event will be held.</div>
+            
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="venue" class="form-label">Venue Name</label>
+                    <input type="text" class="form-control" id="venue" name="venue" value="{{ event.venue }}">
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="venueAddress" class="form-label">Venue Address</label>
+                    <textarea class="form-control" id="venueAddress" name="venue_address" rows="2" placeholder="Enter the complete address of the venue" required>{{ event.venue_address }}</textarea>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <div id="map"></div>
+                    <div class="map-controls">
+                        <input type="text" class="form-control" id="locationSearch" placeholder="Search for a location">
+                        <button type="button" class="btn btn-outline-primary" id="setLocationBtn">Set Location</button>
+                    </div>
+                    <div class="location-preview" id="locationPreview">
+                        <p id="selectedLocation">No location selected</p>
+                        <input type="hidden" id="locationLat" name="location_lat">
+                        <input type="hidden" id="locationLng" name="location_lng">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration & Pricing -->
+        <div class="form-section">
+            <div class="form-section-title">Registration & Pricing</div>
+            <div class="form-section-description">Set up registration details and pricing for your event.</div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="isFree" name="is_free" {% if event.is_free %}checked{% endif %}>
+                        <label class="form-check-label" for="isFree">Free Event</label>
+                    </div>
+                    
+                    <div id="priceField" {% if event.is_free %}style="display:none;"{% endif %}>
+                        <label for="price" class="form-label">Price (in USD)</label>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" value="{{ event.price }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="seatsTotal" class="form-label">Total Seats</label>
+                    <input type="number" class="form-control" id="seatsTotal" name="seats_total" min="0" value="{{ event.seats_total }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="seatsAvailable" class="form-label">Available Seats</label>
+                    <input type="number" class="form-control" id="seatsAvailable" name="seats_available" min="0" value="{{ event.seats_available }}">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="isFeatured" name="is_featured" {% if event.is_featured %}checked{% endif %}>
+                        <label class="form-check-label" for="isFeatured">Feature this event on the homepage</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Media -->
+        <div class="form-section">
+            <div class="form-section-title">Media</div>
+            <div class="form-section-description">Add images, videos, and documents for your event.</div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="eventImage" class="form-label">Event Image</label>
+                    {% if event.image %}
+                    <img src="{{ url_for('static', filename='uploads/images/' + event.image) }}" class="event-thumbnail mb-2" alt="Event Image">
+                    {% endif %}
+                    <input type="file" class="form-control" id="eventImage" name="image" accept="image/*">
+                </div>
+                <div class="col-md-6">
+                    <label for="coverImage" class="form-label">Cover Image</label>
+                    {% if event.cover_image %}
+                    <img src="{{ url_for('static', filename='uploads/images/' + event.cover_image) }}" class="event-thumbnail mb-2" alt="Cover Image">
+                    {% endif %}
+                    <input type="file" class="form-control" id="coverImage" name="cover_image" accept="image/*">
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="eventVideo" class="form-label">Event Video</label>
+                    {% if event.video %}
+                    <div class="mb-2">Current video: {{ event.video }}</div>
+                    {% endif %}
+                    <input type="file" class="form-control" id="eventVideo" name="video" accept="video/*">
+                </div>
+                <div class="col-md-6">
+                    <label for="brochure" class="form-label">Brochure/PDF</label>
+                    {% if event.brochure %}
+                    <div class="mb-2">Current brochure: <a href="{{ url_for('static', filename='uploads/brochures/' + event.brochure) }}" target="_blank">{{ event.brochure }}</a></div>
+                    {% endif %}
+                    <input type="file" class="form-control" id="brochure" name="brochure" accept=".pdf,.doc,.docx">
+                </div>
+            </div>
+
+            <!-- Gallery Images -->
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="galleryImages" class="form-label">Gallery Images</label>
+                    <input type="file" class="form-control" id="galleryImages" name="gallery_images" accept="image/*" multiple>
+                    <div id="galleryPreview" class="gallery-preview">
+                        {% if event.gallery_images %}
+                            {% for image in event.gallery_images.split(',') %}
+                                <div class="gallery-image-container">
+                                    <img src="{{ url_for('static', filename='uploads/images/' + image) }}" class="gallery-image" alt="Gallery image">
+                                    <span class="remove-gallery-image" data-image="{{ image }}"><i class="fas fa-times"></i></span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="form-section">
+            <div class="form-section-title">Event Schedule</div>
+            <div class="form-section-description">Add schedule items for your event.</div>
+            
+            <div class="schedule-container">
+                {% if event.schedule %}
+                    {% set schedule = event.schedule|fromjson %}
+                    {% for item in schedule.items %}
+                        <div class="schedule-item">
+                            <span class="remove-schedule"><i class="fas fa-times"></i></span>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Title</label>
+                                    <input type="text" class="form-control schedule-title" value="{{ item.title }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Time</label>
+                                    <input type="time" class="form-control schedule-time" value="{{ item.time }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Duration</label>
+                                    <input type="text" class="form-control schedule-duration" value="{{ item.duration }}">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control schedule-description" rows="2">{{ item.description }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <button type="button" class="btn btn-outline-primary mt-3" id="addScheduleItem">
+                <i class="fas fa-plus"></i> Add Schedule Item
+            </button>
+        </div>
+
+        <!-- Theme Customization -->
+        <div class="form-section">
+            <div class="form-section-title">UI Customization</div>
+            <div class="form-section-description">Customize how your event registration page will look.</div>
+            
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="uiTheme" class="form-label">Registration Page Theme</label>
+                    <select class="form-select" id="uiTheme" name="ui_theme">
+                        <option value="minimalist" {% if event.ui_theme == 'minimalist' %}selected{% endif %}>Minimalist</option>
+                        <option value="creative" {% if event.ui_theme == 'creative' %}selected{% endif %}>Creative</option>
+                        <option value="elegant" {% if event.ui_theme == 'elegant' %}selected{% endif %}>Elegant</option>
+                        <option value="retro" {% if event.ui_theme == 'retro' %}selected{% endif %}>Retro</option>
+                        <option value="tech" {% if event.ui_theme == 'tech' %}selected{% endif %}>Tech</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="theme-selector">
+                        <div class="theme-option {% if event.ui_theme == 'minimalist' %}selected{% endif %}" data-theme="minimalist">
+                            <img src="/static/theme_assets/minimalist/thumbnail.png" class="theme-thumbnail" alt="Minimalist theme">
+                            <span>Minimalist</span>
+                        </div>
+                        <div class="theme-option {% if event.ui_theme == 'creative' %}selected{% endif %}" data-theme="creative">
+                            <img src="/static/theme_assets/creative/thumbnail.png" class="theme-thumbnail" alt="Creative theme">
+                            <span>Creative</span>
+                        </div>
+                        <div class="theme-option {% if event.ui_theme == 'elegant' %}selected{% endif %}" data-theme="elegant">
+                            <img src="/static/theme_assets/elegant/thumbnail.png" class="theme-thumbnail" alt="Elegant theme">
+                            <span>Elegant</span>
+                        </div>
+                        <div class="theme-option {% if event.ui_theme == 'retro' %}selected{% endif %}" data-theme="retro">
+                            <img src="/static/theme_assets/retro/thumbnail.png" class="theme-thumbnail" alt="Retro theme">
+                            <span>Retro</span>
+                        </div>
+                        <div class="theme-option {% if event.ui_theme == 'tech' %}selected{% endif %}" data-theme="tech">
+                            <img src="/static/theme_assets/tech/thumbnail.png" class="theme-thumbnail" alt="Tech theme">
+                            <span>Tech</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <label class="form-label">Theme Preview</label>
+                    <div class="theme-preview">
+                        <iframe id="themePreviewFrame" class="preview-frame" src="{{ url_for('preview_registration_theme', theme=event.ui_theme, event_name=event.name, event_description=event.description, is_preview='true') }}"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Options -->
+        <div class="form-section">
+            <div class="form-section-title">Advanced Options</div>
+            <div class="form-section-description">Configure additional settings for your event.</div>
+            
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="hasExploration" name="has_exploration" {% if event.has_exploration %}checked{% endif %}>
+                        <label class="form-check-label" for="hasExploration">Enable 3D Exploration</label>
+                    </div>
+                    
+                    <div id="explorationUrlField" {% if not event.has_exploration %}style="display:none;"{% endif %}>
+                        <label for="customExplorationUrl" class="form-label">Custom Exploration URL</label>
+                        <input type="text" class="form-control" id="customExplorationUrl" name="custom_exploration_url" value="{{ event.custom_exploration_url }}">
+                        <small class="text-muted">Optional. If not provided, a default 3D space will be used.</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <label for="customData" class="form-label">Custom Data (JSON)</label>
+                    <textarea class="form-control custom-data-editor" id="customData" name="custom_data">{{ event.custom_data }}</textarea>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="spinner-overlay" id="loadingOverlay">
+    <div class="spinner-container">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-3 mb-0">Saving event, please wait...</p>
+    </div>
+</div>
+
+<!-- Template for new schedule item -->
+<template id="scheduleItemTemplate">
+    <div class="schedule-item">
+        <span class="remove-schedule"><i class="fas fa-times"></i></span>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control schedule-title" placeholder="Session title">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Time</label>
+                <input type="time" class="form-control schedule-time">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Duration</label>
+                <input type="text" class="form-control schedule-duration" placeholder="e.g. 45min">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <label class="form-label">Description</label>
+                <textarea class="form-control schedule-description" rows="2" placeholder="Session description"></textarea>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let map;
+    let currentMarker;
+    let geocodeService;
+    
+    // Initialize map when the page is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Leaflet map
+        map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        geocodeService = L.esri.Geocoding.geocodeService();
+        
+        // Add existing location marker if available
+        const lat = '{{ event.location_lat }}';
+        const lng = '{{ event.location_lng }}';
+        if (lat && lng) {
+            addMarker(parseFloat(lat), parseFloat(lng));
+            document.getElementById('locationPreview').classList.add('active');
+            document.getElementById('selectedLocation').textContent = '{{ event.venue }}';
+            document.getElementById('locationLat').value = lat;
+            document.getElementById('locationLng').value = lng;
+            map.setView([parseFloat(lat), parseFloat(lng)], 13);
+        }
+        
+        // Set up location search
+        const searchControl = L.esri.Geocoding.geosearch({
+            position: 'topright',
+            placeholder: 'Search for location',
+            useMapBounds: false,
+        }).addTo(map);
+        
+        // Handle search results
+        searchControl.on('results', function(data) {
+            if (data.results && data.results.length > 0) {
+                const result = data.results[0];
+                addMarker(result.latlng.lat, result.latlng.lng);
+                document.getElementById('venue').value = result.text;
+                document.getElementById('locationPreview').classList.add('active');
+                document.getElementById('selectedLocation').textContent = result.text;
+                document.getElementById('locationLat').value = result.latlng.lat;
+                document.getElementById('locationLng').value = result.latlng.lng;
+            }
+        });
+        
+        // Handle map clicks
+        map.on('click', function(e) {
+            addMarker(e.latlng.lat, e.latlng.lng);
+            
+            // Use reverse geocoding to get address
+            geocodeService.reverse().latlng(e.latlng).run(function(error, result) {
+                if (!error) {
+                    const address = result.address.Match_addr || result.address.Address;
+                    document.getElementById('venue').value = address;
+                    document.getElementById('locationPreview').classList.add('active');
+                    document.getElementById('selectedLocation').textContent = address;
+                    document.getElementById('locationLat').value = e.latlng.lat;
+                    document.getElementById('locationLng').value = e.latlng.lng;
+                }
+            });
+        });
+        
+        // Initialize free/paid price toggle
+        document.getElementById('isFree').addEventListener('change', function() {
+            document.getElementById('priceField').style.display = this.checked ? 'none' : 'block';
+            if (this.checked) {
+                document.getElementById('price').value = 0;
+            }
+        });
+        
+        // Initialize exploration toggle
+        document.getElementById('hasExploration').addEventListener('change', function() {
+            document.getElementById('explorationUrlField').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Theme selector functionality
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const theme = this.getAttribute('data-theme');
+                document.getElementById('uiTheme').value = theme;
+                
+                // Update selection UI
+                document.querySelectorAll('.theme-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                
+                // Update preview iframe
+                const eventName = document.getElementById('eventName').value || 'Sample Event';
+                const eventDescription = document.getElementById('eventDescription').value || 'Event description';
+                const previewUrl = `/preview_registration_theme/${theme}?event_name=${encodeURIComponent(eventName)}&event_description=${encodeURIComponent(eventDescription)}&is_preview=true`;
+                document.getElementById('themePreviewFrame').src = previewUrl;
+            });
+        });
+        
+        // Schedule item functionality
+        document.getElementById('addScheduleItem').addEventListener('click', function() {
+            const template = document.getElementById('scheduleItemTemplate');
+            const clone = document.importNode(template.content, true);
+            document.querySelector('.schedule-container').appendChild(clone);
+            
+            // Add event listener to the new remove button
+            const removeBtn = document.querySelector('.schedule-container .schedule-item:last-child .remove-schedule');
+            removeBtn.addEventListener('click', function() {
+                this.closest('.schedule-item').remove();
+            });
+        });
+        
+        // Add event listeners to existing remove schedule buttons
+        document.querySelectorAll('.remove-schedule').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.schedule-item').remove();
+            });
+        });
+        
+        // Gallery image removal
+        document.querySelectorAll('.remove-gallery-image').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const imageToRemove = this.getAttribute('data-image');
+                // You would need to handle removing this image from the server
+                this.closest('.gallery-image-container').remove();
+            });
+        });
+        
+        // Save event form submission
+        document.getElementById('saveEventBtn').addEventListener('click', function() {
+            saveEventData();
+        });
+
+        // Update theme preview when event name or description changes
+        document.getElementById('eventName').addEventListener('change', updateThemePreview);
+        document.getElementById('eventDescription').addEventListener('change', updateThemePreview);
+    });
+    
+    function addMarker(lat, lng) {
+        // Remove existing marker if any
+        if (currentMarker) {
+            map.removeLayer(currentMarker);
+        }
+        
+        // Add new marker
+        currentMarker = L.marker([lat, lng]).addTo(map);
+        
+        // Center map on marker
+        map.setView([lat, lng], 13);
+    }
+    
+    function updateThemePreview() {
+        const theme = document.getElementById('uiTheme').value;
+        const eventName = document.getElementById('eventName').value || 'Sample Event';
+        const eventDescription = document.getElementById('eventDescription').value || 'Event description';
+        const previewUrl = `/preview_registration_theme/${theme}?event_name=${encodeURIComponent(eventName)}&event_description=${encodeURIComponent(eventDescription)}&is_preview=true`;
+        document.getElementById('themePreviewFrame').src = previewUrl;
+    }
+    
+    function collectScheduleData() {
+        const scheduleItems = [];
+        document.querySelectorAll('.schedule-item').forEach(item => {
+            scheduleItems.push({
+                title: item.querySelector('.schedule-title').value,
+                time: item.querySelector('.schedule-time').value,
+                duration: item.querySelector('.schedule-duration').value,
+                description: item.querySelector('.schedule-description').value
+            });
+        });
+        return { items: scheduleItems };
+    }
+    
+    function saveEventData() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        loadingOverlay.style.display = 'flex';
+          const formData = new FormData(document.getElementById('editEventForm'));
+        
+        // Add schedule data
+        const scheduleData = collectScheduleData();
+        formData.append('schedule', JSON.stringify(scheduleData));
+        
+        // Remove checked is_free to ensure it's processed correctly
+        if (document.getElementById('isFree').checked) {
+            formData.set('price', '0');
+        }
+        
+        fetch('/api/organiser/events/update/' + formData.get('event_id'), {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingOverlay.style.display = 'none';
+            
+            if (data.success) {
+                // Show success notification
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Event updated successfully',
+                    confirmButtonColor: '#3e64ff'
+                }).then(() => {
+                    // Redirect to events list
+                    window.location.href = '/organiser/events';
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.error || 'Failed to update event',
+                    confirmButtonColor: '#3e64ff'
+                });
+            }
+        })
+        .catch(error => {
+            loadingOverlay.style.display = 'none';
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An unexpected error occurred: ' + error,
+                confirmButtonColor: '#3e64ff'
+            });
+        });
+    }
+</script>
+{% endblock %}

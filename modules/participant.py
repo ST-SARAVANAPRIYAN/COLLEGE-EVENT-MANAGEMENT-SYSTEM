@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, session, redirect, url_for, jsonify, current_app
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, current_app, flash
 from flask_login import login_required, current_user
 from models.models import db, User, Event, Registration, Notification
 from functools import wraps
 from datetime import datetime
 
-participant_bp = Blueprint('participant', __name__)
+participant_bp = Blueprint('participant', __name__, url_prefix='/participant')
 
 # Participant authentication decorator
 def participant_required(f):
@@ -22,8 +22,7 @@ def dashboard():
         # Check if user is a participant
         if current_user.role != 'participant':
             return redirect(url_for('home'))
-        
-        # Get today's date for comparison
+          # Get today's date for comparison
         today = datetime.now().date()
         
         # Get user's registrations
@@ -43,8 +42,11 @@ def dashboard():
                 # Add the event reference to the registration object for template use
                 reg.event = event
                 
+                # Convert event.start_date to date object for comparison if it exists
+                event_date = event.start_date.date() if event.start_date else None
+                
                 # Check if the event is upcoming
-                if event.start_date and event.start_date >= today:
+                if event_date and event_date >= today:
                     upcoming_count += 1
                     
                     # Only add unique events to the upcoming_events list
@@ -52,8 +54,8 @@ def dashboard():
                         upcoming_events.append(event)
                 
                 # Check if the event is completed and has a certificate
-                if event.start_date and event.start_date < today:
-                    if reg.certificate_issued:
+                if event_date and event_date < today:
+                    if hasattr(reg, 'certificate_issued') and reg.certificate_issued:
                         certificate_count += 1
         
         # Create stats dictionary for the dashboard
@@ -96,8 +98,8 @@ def get_my_registrations():
                     "event_tag": event.tag,
                     "registration_date": reg.registration_date.strftime("%Y-%m-%d") if reg.registration_date else None,
                     "payment_id": reg.payment_id,
-                    "payment_status": reg.payment_status,
-                    "has_exploration": event.has_exploration
+                    "payment_status": reg.payment_status
+                    # Removed has_exploration from event dicts/logic as the field is deprecated.
                 }
                 result.append(registration_data)
                 
@@ -138,3 +140,38 @@ def mark_notification_read(notification_id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@participant_bp.route('/cancel_registration/<int:event_id>', methods=['GET'])
+@login_required
+@participant_required
+def cancel_registration(event_id):
+    try:
+        user_id = current_user.id
+        
+        # Find the registration for this user and event
+        registration = Registration.query.filter_by(
+            user_id=user_id,
+            event_id=event_id
+        ).first()
+        
+        if not registration:
+            flash('Registration not found.', 'danger')
+            return redirect(url_for('participant.dashboard'))
+        
+        # Get event to update seats
+        event = Event.query.get(event_id)
+        if event:
+            # Increase available seats by 1
+            event.seats_available += 1
+        
+        # Delete the registration
+        db.session.delete(registration)
+        db.session.commit()
+        
+        flash('Event registration successfully cancelled.', 'success')
+        return redirect(url_for('participant.dashboard'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error cancelling registration: {str(e)}")
+        flash(f'Error cancelling registration: {str(e)}', 'danger')
+        return redirect(url_for('participant.dashboard'))

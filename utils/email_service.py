@@ -91,6 +91,74 @@ def send_otp_email(email, otp, purpose="verification"):
         print(f"OTP email error: {str(e)}")
         return False
 
+def send_payment_verification_email(user, event, registration):
+    """
+    Send payment verification confirmation email to user
+    
+    Args:
+        user: User object for recipient
+        event: Event object that was paid for
+        registration: Registration object with payment details
+    """
+    subject = f"Payment Verified: {event.name}"
+    
+    # Format the amount with two decimal places
+    amount = "{:.2f}".format(registration.amount)
+    
+    body = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background-color: #1a9be0; color: white; padding: 20px; text-align: center; }}
+            .content {{ padding: 20px; background-color: #f8f9fa; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #6c757d; }}
+            .details {{ background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }}
+            .button {{ display: inline-block; background-color: #1a9be0; color: white; padding: 10px 20px; 
+                     text-decoration: none; border-radius: 5px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Payment Successfully Verified</h2>
+            </div>
+            <div class="content">
+                <p>Hi {user.name},</p>
+                
+                <p>Your payment for <strong>{event.name}</strong> has been verified and your registration is now confirmed.</p>
+                
+                <div class="details">
+                    <h3>Payment Details</h3>
+                    <p><strong>Transaction ID:</strong> {registration.payment_id}</p>
+                    <p><strong>Amount:</strong> ₹{amount}</p>
+                    <p><strong>Payment Method:</strong> {registration.payment_method.upper()}</p>
+                    <p><strong>Date:</strong> {registration.transaction_timestamp.strftime('%Y-%m-%d %H:%M:%S') if registration.transaction_timestamp else '-'}</p>
+                </div>
+                
+                <div class="details">
+                    <h3>Event Details</h3>
+                    <p><strong>Event:</strong> {event.name}</p>
+                    <p><strong>Date:</strong> {event.start_date.strftime('%Y-%m-%d') if event.start_date else event.date}</p>
+                    <p><strong>Time:</strong> {event.start_time or 'TBA'}</p>
+                    <p><strong>Venue:</strong> {event.venue or 'TBA'}</p>
+                </div>
+                
+                <p>Thank you for registering! We look forward to seeing you at the event.</p>
+                
+                <p>Regards,<br>CEMS Team</p>
+            </div>
+            <div class="footer">
+                <p>This is an automated email. Please do not reply directly to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return send_email(user.email, subject, body)
+
 def notify_participants_about_exploration(event, db, User, Registration, Notification):
     """Notify registered participants about new exploration experience"""
     try:

@@ -1,0 +1,32 @@
+# Flask and extensions
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+Flask-Migrate
+Flask-Cors
+
+# Database
+SQLAlchemy
+
+# Utilities
+python-dotenv
+requests
+
+# For password hashing
+Werkzeug
+
+# For email (if used)
+Flask-Mail
+
+# For date/time
+python-dateutil
+
+# For JSON handling
+simplejson
+
+# For MySQL authentication support
+cryptography
+
+pymysql
+pdfkit
