@@ -500,13 +500,24 @@
             const response = await fetch('/api/organiser/pending-deallocations');
             if (!response.ok) return;
             const data = await response.json();
-            const container = document.getElementById('pendingDeallocations');
-            if (data.success && data.allocations && data.allocations.length > 0) {
-                let html = '<strong>Pending Resource Deallocation:</strong><ul>';
+            const container = document.getElementById('pendingDeallocations');            if (data.success && data.allocations && data.allocations.length > 0) {
+                let html = '<div class="card border-warning mb-3"><div class="card-header bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> Pending Resource Deallocations</div><div class="card-body"><ul class="list-group">';
                 data.allocations.forEach(a => {
-                    html += `<li>${a.resource_name} (Event: ${a.event_name}, Quantity: ${a.quantity}) <button class='btn btn-sm btn-success ms-2' onclick='confirmDeallocate(${a.allocation_id})'>Confirm Return</button></li>`;
+                    // Format the end time nicely
+                    const endTimeText = a.end_time ? `<small class="text-muted"><i class="far fa-clock"></i> Event ended: ${a.end_time}</small>` : '';
+                    html += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${a.resource_name}</strong> 
+                            <div>Event: ${a.event_name}, Quantity: ${a.quantity}</div>
+                            ${endTimeText}
+                        </div>
+                        <button class='btn btn-sm btn-success' onclick='confirmDeallocate(${a.allocation_id}, "${a.event_name}", "${a.resource_name}", ${a.quantity})'>
+                            <i class="fas fa-check"></i> Confirm Return
+                        </button>
+                    </li>`;
                 });
-                html += '</ul>';
+                html += '</ul></div></div>';
                 container.innerHTML = html;
                 container.style.display = '';
             } else {

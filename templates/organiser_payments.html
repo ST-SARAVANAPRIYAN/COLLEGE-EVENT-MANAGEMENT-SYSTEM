@@ -1,0 +1,31 @@
+{% extends 'organiser_base.html' %}
+{% block title %}CEMS - Payments{% endblock %}
+{% block page_title %}Payments{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-body text-center">
+                    <h2 class="mb-4">Payments</h2>
+                    <p class="mb-4 text-muted">Choose an option below to manage your event payments.</p>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <a href="/organiser/payment_transactions" class="btn btn-lg btn-outline-primary w-100 py-3">
+                                <i class="fas fa-list-alt fa-lg me-2"></i> View Payment Transactions
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="/organiser/upi_verification" class="btn btn-lg btn-outline-success w-100 py-3">
+                                <i class="fas fa-check-circle fa-lg me-2"></i> Verify Payments
+                            </a>
+                        </div>
+                        <!-- Add more payment-related options here if needed -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

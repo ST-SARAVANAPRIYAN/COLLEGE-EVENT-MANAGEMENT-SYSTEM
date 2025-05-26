@@ -11,7 +11,6 @@
 ## Interaction Rules
 
 - Before generating or modifying any code, describe the intended changes in detail, including affected files, functions, and the purpose of the change.
-- Request explicit confirmation from the user before proceeding with code generation, file creation, refactoring, or deletion.
 - Ask for clarification when assumptions are necessary or when user intent is ambiguous.
 
 ## Performance and Scalability
@@ -38,7 +37,6 @@
 
 ## Prompt Behavior
 
-- Respond only to clearly scoped and confirmed tasks.
 - When context is ambiguous, prompt the user for clarification before proceeding.
 - For sensitive operations such as file deletion, data migration, or external API usage, always prompt for explicit approval.
 

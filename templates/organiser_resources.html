@@ -2,8 +2,6 @@
 
 {% block title %}CEMS - Resource Management{% endblock %}
 
-{% block page_title %}Resource Management{% endblock %}
-
 {% block extra_styles %}
 .resource-card {
     border-radius: 10px;
@@ -57,8 +55,19 @@
     font-weight: 500;
 }
 
-#resourceModal .form-group {
-    margin-bottom: 15px;
+/* Wider progress bar */
+.resource-card .progress {
+    height: 18px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    margin-top: 8px;
+}
+
+.resource-card .progress-bar {
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 10px;
+    transition: width 0.5s, background 0.5s;
 }
 {% endblock %}
 
@@ -84,40 +93,12 @@
     </div>
 
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12">
             <div id="resourceList" class="resource-list">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading resources...</span>
                     </div>
-                    <p class="mt-2">Loading resources...</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card custom-card">
-                <div class="card-title">
-                    <h5>Resource Allocations</h5>
-                </div>
-                <div class="card-body" id="allocationsList">
-                    <div class="text-center py-3">
-                        <p class="text-muted">Select a resource to see allocations</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card custom-card mt-4">
-                <div class="card-title d-flex justify-content-between align-items-center">
-                    <h5>Resource Usage</h5>
-                    <button id="refreshResourceChart" class="btn btn-sm btn-outline-primary" title="Refresh Resource Usage">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-                <div class="card-body p-0 position-relative" id="resourceChartContainer">
-                    <div id="resourceChartLoading" class="position-absolute w-100 h-100 d-flex justify-content-center align-items-center" style="background:rgba(255,255,255,0.7);z-index:2;display:none;">
-                        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
-                    </div>
-                    <canvas id="resourceUsageChart" style="width: 100%; height: 250px;"></canvas>
                 </div>
             </div>
         </div>
@@ -183,12 +164,10 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     // Global variables
     let resources = [];
-    let resourceUsageChart = null;
     let selectedResourceId = null;
     let isResourceLoading = false;
 
@@ -206,7 +185,6 @@
     // Initialize
     document.addEventListener('DOMContentLoaded', async function() {
         await loadResources();
-        initializeResourceChart();
         await loadPendingDeallocations();
         
         // Set up event listeners
@@ -223,148 +201,68 @@
                 document.getElementById('customResourceType').removeAttribute('required');
             }
         });
-
-        document.getElementById('refreshResourceChart').addEventListener('click', async function() {
-            if (isResourceLoading) return;
-            showResourceChartLoading(true);
-            await loadResources();
-            showResourceChartLoading(false);
-        });
     });
 
-    function showResourceChartLoading(show) {
-        const loadingDiv = document.getElementById('resourceChartLoading');
-        const refreshBtn = document.getElementById('refreshResourceChart');
-        if (loadingDiv) loadingDiv.style.display = show ? '' : 'none';
-        if (refreshBtn) refreshBtn.disabled = show;
-    }
-    
-    // Load resources
+    // Load resources with simplified error handling (no loading overlay or refresh notification)
     async function loadResources() {
-        if (isResourceLoading) return;
+        // Prevent concurrent loading
+        if (isResourceLoading) {
+            console.log('Resource loading already in progress, skipping request');
+            return;
+        }
+        
         isResourceLoading = true;
+        
         try {
-            showResourceChartLoading(true);
-            const response = await fetch('/api/resources');
-            resources = await response.json();
+            // Set timeout to prevent infinite loading
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+            
+            // Fetch resources with timeout
+            const response = await fetch('/api/resources', {
+                signal: controller.signal,
+                headers: { 'Cache-Control': 'no-cache' } // Prevent caching
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            // Parse response
+            const data = await response.json();
+            
+            // Validate response format
+            if (!Array.isArray(data)) {
+                console.error('Invalid response format:', data);
+                throw new Error('Server returned invalid data format');
+            }
+            
+            // Store resources globally
+            resources = data;
+            
+            // Update UI
             renderResourcesList(resources);
-            updateResourceChart(resources); // Update chart with new data
-            showAutoDeallocationNotice(resources.auto_deallocated); // Check for auto-deallocation
+            
+            // Check for auto deallocations
+            if (data.auto_deallocated && data.auto_deallocated.length > 0) {
+                showAutoDeallocationNotice(data.auto_deallocated);
+            }
+            
         } catch (error) {
             console.error('Error loading resources:', error);
             document.getElementById('resourceList').innerHTML = `
                 <div class="alert alert-danger">
-                    Failed to load resources. Please try again later.
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Failed to load resources: ${error.message || 'Unknown error'}
                 </div>
             `;
         } finally {
-            showResourceChartLoading(false);
             isResourceLoading = false;
         }
     }
 
-    // Update resource usage chart with current data
-    function updateResourceChart(resourcesList) {
-        if (!resourceUsageChart) return;
-        let total = 0, allocated = 0;
-        resourcesList.forEach(resource => {
-            total += Number(resource.total_quantity);
-            allocated += (Number(resource.total_quantity) - Number(resource.available_quantity));
-        });
-        // Prevent negative and NaN values
-        const available = Math.max(total - allocated, 0);
-        // Defensive: If all allocated, show all red; if all available, all green
-        let chartData;
-        if (total === 0) {
-            chartData = [1, 0];
-        } else if (allocated === 0) {
-            chartData = [total, 0];
-        } else if (available === 0) {
-            chartData = [0, total];
-        } else {
-            chartData = [available, allocated];
-        }
-        resourceUsageChart.data.datasets[0].data = chartData;
-        // Add dynamic labels for clarity
-        resourceUsageChart.data.labels = [
-            `Available (${available})`,
-            `Allocated (${allocated})`
-        ];
-        resourceUsageChart.update();
-    }
-    
-    // Load pending deallocations
-    async function loadPendingDeallocations() {
-        try {
-            const response = await fetch('/api/organiser/pending-deallocations');
-            if (!response.ok) return;
-            const data = await response.json();
-            const container = document.getElementById('pendingDeallocations');
-            if (data.success && data.allocations && data.allocations.length > 0) {
-                let html = '<strong>Confirm Resource Deallocation:</strong><ul>';
-                data.allocations.forEach(a => {
-                    html += `<li>${a.resource_name} (Event: ${a.event_name}, Quantity: ${a.quantity}) <button class='btn btn-sm btn-success ms-2' onclick='confirmDeallocate(${a.allocation_id})'>Confirm Return</button></li>`;
-                });
-                html += '</ul>';
-                container.innerHTML = html;
-                container.style.display = '';
-            } else {
-                container.style.display = 'none';
-            }
-            // Show auto-deallocation notice if needed
-            if (data.auto_deallocated && data.auto_deallocated.length > 0) {
-                showAutoDeallocationNotice(data.auto_deallocated);
-            }
-        } catch (e) {
-            document.getElementById('pendingDeallocations').style.display = 'none';
-        }
-    }
-
-    // Confirm deallocation
-    async function confirmDeallocate(allocationId) {
-        const result = await Swal.fire({
-            title: 'Confirm Deallocation',
-            text: 'Are you sure you want to return this resource?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, return',
-            cancelButtonText: 'Cancel'
-        });
-        if (!result.isConfirmed) return;
-        try {
-            const response = await fetch(`/api/resource-allocations/${allocationId}/deallocate`, { method: 'POST' });
-            const data = await response.json();
-            if (data.success) {
-                Swal.fire({ icon: 'success', title: 'Resource Returned', text: data.message });
-                loadPendingDeallocations();
-                await loadResources();
-            } else {
-                Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Could not deallocate resource.' });
-            }
-        } catch (e) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to deallocate resource.' });
-        }
-    }
-    
-    // Call this after deleting an event to optimally deallocate resources
-    async function deallocateResourcesForDeletedEvent(eventId) {
-        try {
-            // Get all allocations for this event
-            const response = await fetch(`/api/resources/by-event/${eventId}`);
-            if (!response.ok) return;
-            const allocations = await response.json();
-            if (Array.isArray(allocations)) {
-                for (const alloc of allocations) {
-                    if (alloc.allocation && alloc.allocation.status === 'allocated') {
-                        await fetch(`/api/resource-allocations/${alloc.allocation.id}/deallocate`, { method: 'POST' });
-                    }
-                }
-            }
-        } catch (e) {
-            // Silent fail
-        }
-    }
-    
     // Render resources list (update to use 'category' for display and search)
     function renderResourcesList(resourcesList) {
         const container = document.getElementById('resourceList');
@@ -387,7 +285,15 @@
             
             // Calculate allocation percentage
             const allocated = resource.total_quantity - resource.available_quantity;
-            const allocationPercentage = Math.round((allocated / resource.total_quantity) * 100);
+            const allocationPercentage = resource.total_quantity > 0 ? Math.round((allocated / resource.total_quantity) * 100) : 0;
+            
+            // Calculate color: blue (high availability) to red (low availability)
+            // 0% allocated = blue (#007bff), 100% allocated = red (#dc3545)
+            const percent = allocationPercentage / 100;
+            const r = Math.round(0x00 + (0xdc - 0x00) * percent); // 0x00 to 0xdc
+            const g = Math.round(0x7b + (0x34 - 0x7b) * percent); // 0x7b to 0x34
+            const b = Math.round(0xff + (0x45 - 0xff) * percent); // 0xff to 0x45
+            const barColor = `rgb(${r},${g},${b})`;
             
             html += `
                 <div class="resource-card" data-resource-id="${resource.id}">
@@ -399,7 +305,7 @@
                             </span>
                             <h5>${resource.name}</h5>
                             <p class="resource-quantity">
-                                <span class="available">${resource.available_quantity}</span> available / 
+                                <span class="available">${resource.available_quantity}</span> available /
                                 <span class="allocated">${allocated}</span> allocated
                                 out of ${resource.total_quantity} total
                             </p>
@@ -417,9 +323,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="progress mt-2" style="height: 5px;">
-                        <div class="progress-bar" role="progressbar" style="width: ${allocationPercentage}%;" 
-                             aria-valuenow="${allocationPercentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress mt-2" style="height: 18px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${allocationPercentage}%; background: ${barColor};" aria-valuenow="${allocationPercentage}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
             `;
@@ -439,6 +344,140 @@
                 this.classList.add('border-primary');
             });
         });
+    }
+    
+    // Load pending deallocations
+    async function loadPendingDeallocations() {
+        try {
+            const response = await fetch('/api/organiser/pending-deallocations');
+            if (!response.ok) return;
+            const data = await response.json();
+            const container = document.getElementById('pendingDeallocations');            if (data.success && data.allocations && data.allocations.length > 0) {
+                let html = '<div class="card border-warning mb-3"><div class="card-header bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> Pending Resource Deallocations</div><div class="card-body"><ul class="list-group">';
+                data.allocations.forEach(a => {
+                    // Format the end time nicely
+                    const endTimeText = a.end_time ? `<small class="text-muted"><i class="far fa-clock"></i> Event ended: ${a.end_time}</small>` : '';
+                    html += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${a.resource_name}</strong> 
+                            <div>Event: ${a.event_name}, Quantity: ${a.quantity}</div>
+                            ${endTimeText}
+                        </div>
+                        <button class='btn btn-sm btn-success' onclick='confirmDeallocate(${a.allocation_id}, "${a.event_name}", "${a.resource_name}", ${a.quantity})'>
+                            <i class="fas fa-check"></i> Confirm Return
+                        </button>
+                    </li>`;
+                });
+                html += '</ul></div></div>';
+                container.innerHTML = html;
+                container.style.display = '';
+            } else {
+                container.style.display = 'none';
+            }
+            // Show auto-deallocation notice if needed
+            if (data.auto_deallocated && data.auto_deallocated.length > 0) {
+                showAutoDeallocationNotice(data.auto_deallocated);
+            }
+        } catch (e) {
+            document.getElementById('pendingDeallocations').style.display = 'none';
+        }
+    }    // Confirm deallocation with enhanced UI and error handling
+    async function confirmDeallocate(allocationId, eventName = '', resourceName = '', quantity = 0) {
+        // More descriptive confirmation dialog
+        const result = await Swal.fire({
+            title: 'Confirm Resource Return',
+            html: `
+                <div class="text-start">
+                    <p>You are returning:</p>
+                    <ul>
+                        <li><strong>${quantity}x ${resourceName}</strong></li>
+                        <li>From event: <strong>${eventName}</strong></li>
+                    </ul>
+                    <p>This will increase your available resource count.</p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, return resources',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d'
+        });
+        
+        // Return if user cancels
+        if (!result.isConfirmed) return;
+        
+        // Show processing state
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Returning resources to inventory',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        try {
+            // Call API to deallocate
+            const response = await fetch(`/api/resource-allocations/${allocationId}/deallocate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            // Parse response
+            const data = await response.json();
+            
+            // Handle success case
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Resources Returned',
+                    text: `${quantity}x ${resourceName} have been successfully returned to inventory`,
+                    timer: 3000
+                });
+                
+                // Update UI
+                loadPendingDeallocations();
+                await loadResources();
+            } else {
+                // Handle API errors
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Deallocation Failed',
+                    text: data.error || 'Could not deallocate resource. Please try again.'
+                });
+            }
+        } catch (error) {
+            // Handle network or other errors
+            console.error('Deallocation error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Connection Error',
+                text: 'Failed to deallocate resource due to a network error. Please check your connection and try again.'
+            });
+        }
+    }
+    
+    // Call this after deleting an event to optimally deallocate resources
+    async function deallocateResourcesForDeletedEvent(eventId) {
+        try {
+            // Get all allocations for this event
+            const response = await fetch(`/api/resources/by-event/${eventId}`);
+            if (!response.ok) return;
+            const allocations = await response.json();
+            if (Array.isArray(allocations)) {
+                for (const alloc of allocations) {
+                    if (alloc.allocation && alloc.allocation.status === 'allocated') {
+                        await fetch(`/api/resource-allocations/${alloc.allocation.id}/deallocate`, { method: 'POST' });
+                    }
+                }
+            }
+        } catch (e) {
+            // Silent fail
+        }
     }
     
     // Save new resource with enhanced exception handling and support for 'Other' type
@@ -568,86 +607,80 @@
         renderResourcesList(filteredResources);
     }
     
-    // Edit resource (update to use 'category')
+    // Edit resource (update to use 'category' and show allocated quantity)
     async function editResource(resourceId) {
         const resource = resources.find(r => r.id === resourceId);
         if (!resource) return;
-        
+        // Fetch allocated quantity from API
+        let allocated = 0;
+        try {
+            const resp = await fetch(`/api/resources/${resourceId}/allocations`);
+            const allocations = await resp.json();
+            if (Array.isArray(allocations)) {
+                allocated = allocations.filter(a => a.status === 'allocated').reduce((sum, a) => sum + a.quantity, 0);
+            }
+        } catch (e) { allocated = 0; }
         // Populate form
         document.getElementById('resourceName').value = resource.name;
         document.getElementById('resourceType').value = resource.category;
         document.getElementById('totalQuantity').value = resource.total_quantity;
         document.getElementById('resourceDescription').value = resource.description || '';
-        
+        // Show allocated info
+        let allocInfo = document.getElementById('allocatedInfo');
+        if (!allocInfo) {
+            allocInfo = document.createElement('div');
+            allocInfo.id = 'allocatedInfo';
+            allocInfo.className = 'alert alert-info mt-2';
+            document.getElementById('totalQuantity').parentElement.appendChild(allocInfo);
+        }
+        allocInfo.innerHTML = `<strong>Allocated:</strong> ${allocated} (You cannot set total quantity below this value)`;
         // Update modal title
         document.getElementById('resourceModalLabel').textContent = 'Edit Resource';
-        
         // Update save button handler
         const saveButton = document.getElementById('saveResource');
         saveButton.removeEventListener('click', saveResource);
-        saveButton.addEventListener('click', () => updateResource(resourceId));
-        
+        saveButton.onclick = () => updateResource(resourceId, allocated);
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('resourceModal'));
         modal.show();
     }
-    
-    // Update resource with enhanced exception handling and support for 'Other' type
-    async function updateResource(resourceId) {
-        // Similar to saveResource but using PUT request
+    // Update resource with enhanced validation and error handling
+    async function updateResource(resourceId, allocated) {
         const name = document.getElementById('resourceName').value;
         let resourceType = document.getElementById('resourceType').value;
         const totalQuantity = parseInt(document.getElementById('totalQuantity').value);
         const description = document.getElementById('resourceDescription').value;
-        
         if (resourceType === 'other') {
             resourceType = document.getElementById('customResourceType').value.trim();
         }
-        
         if (!name || !resourceType || isNaN(totalQuantity) || totalQuantity < 1) {
             Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please fill in all required fields.' });
             return;
         }
-        
+        if (totalQuantity < allocated) {
+            Swal.fire({ icon: 'error', title: 'Invalid Quantity', text: `Total quantity cannot be less than allocated (${allocated}).` });
+            return;
+        }
         try {
             const response = await fetch(`/api/resources/${resourceId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name,
-                    category: resourceType, // Use 'category' instead of 'resource_type'
-                    total_quantity: totalQuantity,
-                    description
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, category: resourceType, total_quantity: totalQuantity, description })
             });
-            
             const result = await response.json();
-            
             if (result.success) {
-                // Close modal
                 bootstrap.Modal.getInstance(document.getElementById('resourceModal')).hide();
-                
-                // Reset form and title
                 document.getElementById('resourceForm').reset();
                 document.getElementById('resourceModalLabel').textContent = 'Add New Resource';
-                
-                // Reset save button handler
                 const saveButton = document.getElementById('saveResource');
-                saveButton.removeEventListener('click', () => updateResource(resourceId));
+                saveButton.removeEventListener('click', () => updateResource(resourceId, allocated));
                 saveButton.addEventListener('click', saveResource);
-                
-                // Reload resources
                 await loadResources();
-                
-                // Show success message
                 Swal.fire({ icon: 'success', title: 'Success', text: 'Resource updated successfully!' });
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: result.error || 'Could not update resource.' });
             }
         } catch (error) {
-            console.error('Error updating resource:', error);
             Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update resource. Please try again.' });
         }
     }
@@ -709,46 +742,6 @@
             }
         } catch (error) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete event. Please try again.' });
-        }
-    }
-
-    // Initialize resource usage chart
-    function initializeResourceChart() {
-        const ctx = document.getElementById('resourceUsageChart');
-        if(ctx) {
-            resourceUsageChart = new Chart(ctx.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Available', 'Allocated'],
-                    datasets: [{
-                        data: [100, 0],
-                        backgroundColor: ['#28a745', '#dc3545']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Resource Allocation'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    const total = context.chart._metasets[0].total;
-                                    const percent = total ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `${label}: ${value} (${percent}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
         }
     }
 </script>

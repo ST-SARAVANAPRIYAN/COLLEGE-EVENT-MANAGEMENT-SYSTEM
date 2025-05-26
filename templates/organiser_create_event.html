@@ -248,9 +248,7 @@
         <!-- Submit Section -->
         <div class="form-section text-center">
             <button type="submit" class="btn btn-primary btn-lg px-5">Create Event</button>
-            <button type="button" class="btn btn-outline-secondary btn-lg px-5 ms-2" id="saveAsDraftBtn">Save as Draft</button>
         </div>
-        <input type="hidden" name="is_draft" id="isDraft" value="0">
     </form>
 </div>
 <!-- Theme Preview Modal -->
@@ -495,17 +493,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     // Add resource row
     document.getElementById('addResourceBtn').addEventListener('click', addResourceRow);
-    function handleResourceTypeChange(selectElem) {
-        // Show/hide the custom input for 'Other' option
-        const otherInput = selectElem.closest('.resource-select').querySelector('.resource-other-input');
-        if (selectElem.value === 'other') {
-            otherInput.style.display = 'block';
-            otherInput.required = true;
-        } else {
-            otherInput.style.display = 'none';
-            otherInput.required = false;
-        }
+    // --- Resource Remove Button Handler (with confirmation and error handling) ---
+    function attachRemoveResourceHandlers() {
+        document.querySelectorAll('.remove-resource').forEach(function(btn) {
+            btn.onclick = function() {
+                const row = btn.closest('.resource-row');
+                if (!row) return;
+                // Show confirmation dialog before removing
+                Swal.fire({
+                    title: 'Remove Resource?',
+                    text: 'Are you sure you want to remove this resource from the list?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, remove',
+                    cancelButtonText: 'Cancel',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        try {
+                            row.parentNode.removeChild(row);
+                            updateSelectedResources();
+                        } catch (err) {
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'Could not remove resource row.' });
+                        }
+                    }
+                });
+            };
+        });
     }
+    // Attach handler to initial resource row(s)
+    attachRemoveResourceHandlers();
     function addResourceRow() {
         try {
             const container = document.getElementById('resourcesContainer');
@@ -516,14 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Populate dropdown with organiser resources
             updateResourceDropdown(newRow.querySelector('.resource-type-select'));
             // Add event listeners for new row
-            newRow.querySelector('.remove-resource').addEventListener('click', function() {
-                try {
-                    container.removeChild(newRow);
-                    updateSelectedResources();
-                } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Could not remove resource row.' });
-                }
-            });
+            attachRemoveResourceHandlers(); // Attach remove handler to new button
             newRow.querySelector('.resource-type-select').addEventListener('change', function() {
                 handleResourceTypeChange(this);
                 showResourceImagePreview(this);
@@ -550,11 +559,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectElem = inputElem.closest('.resource-row').querySelector('.resource-type-select');
             setResourceQuantityLimit(selectElem);
         });
-    });
-    // Save as draft
-    document.getElementById('saveAsDraftBtn').addEventListener('click', function() {
-        document.getElementById('isDraft').value = '1';
-        document.getElementById('createEventForm').submit();
     });
     // Form submission
     document.getElementById('createEventForm').addEventListener('submit', function(e) {

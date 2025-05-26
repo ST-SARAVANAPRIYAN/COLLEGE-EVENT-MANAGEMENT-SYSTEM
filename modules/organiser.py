@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, session, redirect, url_for, jsonif
 from models.models import db, User, Event, Registration, Notification, Resource, ResourceAllocation
 from utils.email_service import send_email
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, time as dt_time
 import json
 import os
 from werkzeug.utils import secure_filename
@@ -421,32 +421,46 @@ def update_resource(resource_id):
     try:
         if session.get('user_role') not in ['organiser', 'admin']:
             return jsonify({'error': 'Unauthorized'}), 403
-            
         resource = Resource.query.get(resource_id)
         if not resource:
             return jsonify({'error': 'Resource not found'}), 404
-            
         data = request.json or {}
-        
-        # Update fields
+        # --- Enhanced logic: enforce allocation constraints ---
+        from models.models import ResourceAllocation
+        # Calculate total allocated quantity (status = 'allocated')
+        allocated = db.session.query(db.func.sum(ResourceAllocation.quantity)).filter(
+            ResourceAllocation.resource_id == resource_id,
+            ResourceAllocation.status == 'allocated'
+        ).scalar() or 0
+        new_total = data.get('total_quantity', resource.total_quantity)
+        # Prevent reducing total below allocated
+        if new_total < allocated:
+            return jsonify({'error': f'Cannot set total quantity below allocated ({allocated}).'}), 400
+        # Adjust available_quantity based on new total and allocations
+        delta = new_total - resource.total_quantity
+        if delta != 0:
+            # If increasing, add delta to available
+            if delta > 0:
+                resource.available_quantity += delta
+            # If decreasing, set available = total - allocated (never negative)
+            else:
+                resource.available_quantity = max(new_total - allocated, 0)
+        resource.total_quantity = new_total
+        # Update other fields
         if 'name' in data:
             resource.name = data['name']
         if 'category' in data:
             resource.category = data['category']
-        if 'total_quantity' in data:
-            resource.total_quantity = data['total_quantity']
-        if 'available_quantity' in data:
-            resource.available_quantity = data['available_quantity']
         if 'description' in data:
             resource.description = data['description']
-            
         db.session.commit()
-        
         return jsonify({
             'success': True,
-            'resource': resource.to_dict()
+            'resource': resource.to_dict(),
+            'allocated': allocated
         })
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # CSRF protection disabled
@@ -1234,10 +1248,90 @@ def update_organiser_event(event_id):
         # Save changes
         db.session.commit()
         
-        # Return success response
+        # --- Improved Resource Allocation Update Logic (handle 0/returned allocations properly) ---
+        from models.models import Resource, ResourceAllocation
+        # Get all previous allocations for this event (any status)
+        all_prev_allocs = ResourceAllocation.query.filter_by(event_id=event.id).all()
+        prev_alloc_map = {}
+        for alloc in all_prev_allocs:
+            # Only keep the latest allocation for each resource_id
+            if alloc.resource_id not in prev_alloc_map or (alloc.allocated_at and alloc.allocated_at > prev_alloc_map[alloc.resource_id].allocated_at):
+                prev_alloc_map[alloc.resource_id] = alloc
+        # Parse new allocations from form
+        resource_ids = data.getlist('resource_type[]') if hasattr(data, 'getlist') else data.get('resource_type', [])
+        resource_quantities = data.getlist('resource_quantity[]') if hasattr(data, 'getlist') else data.get('resource_quantity', [])
+        resource_others = data.getlist('resource_other[]') if hasattr(data, 'getlist') else data.get('resource_other', [])
+        if isinstance(resource_ids, str):
+            resource_ids = [resource_ids]
+        if isinstance(resource_quantities, str):
+            resource_quantities = [resource_quantities]
+        if isinstance(resource_others, str):
+            resource_others = [resource_others]
+        # Track which resource_ids are in the new allocation
+        new_resource_ids = set()
+        for idx, res_id in enumerate(resource_ids):
+            if not res_id or res_id == 'other':
+                continue
+            try:
+                res_id_int = int(res_id)
+                quantity = int(resource_quantities[idx]) if idx < len(resource_quantities) else 1
+                resource = Resource.query.get(res_id_int)
+                if not resource:
+                    continue
+                new_resource_ids.add(res_id_int)
+                prev_alloc = prev_alloc_map.get(res_id_int)
+                # Always use the previous allocation if it exists, regardless of status or quantity
+                effective_available = resource.available_quantity
+                if prev_alloc and prev_alloc.status == 'allocated':
+                    effective_available += prev_alloc.quantity
+                if quantity > effective_available:
+                    continue
+                if prev_alloc:
+                    # Update existing allocation (even if it was returned or had quantity 0)
+                    resource.available_quantity = effective_available - quantity
+                    prev_alloc.quantity = quantity
+                    prev_alloc.allocated_at = datetime.utcnow()
+                    prev_alloc.status = 'allocated'
+                    prev_alloc.returned_at = None
+                else:
+                    # Create new allocation
+                    allocation = ResourceAllocation(
+                        resource_id=resource.id,
+                        event_id=new_event.id,
+                        quantity=quantity,
+                        status='allocated'
+                    )
+                    db.session.add(allocation)
+                    resource.available_quantity = resource.available_quantity - quantity
+            except Exception as alloc_e:
+                db.session.rollback()
+                print(f"Error allocating resource: {alloc_e}")
+        # Mark allocations not in the new list as returned
+        for res_id, alloc in prev_alloc_map.items():
+            if res_id not in new_resource_ids and alloc.status == 'allocated':
+                resource = Resource.query.get(res_id)
+                if resource:
+                    resource.available_quantity += alloc.quantity
+                alloc.status = 'returned'
+                alloc.returned_at = datetime.utcnow()
+        db.session.commit()
+        # --- Registration Theme Update ---
+        reg_theme = data.get('registration_theme') or data.get('ui_theme')
+        if reg_theme:
+            event.ui_theme = reg_theme
+            try:
+                import json
+                custom_data = json.loads(event.custom_data) if event.custom_data else {}
+                custom_data['registration_theme'] = reg_theme
+                event.custom_data = json.dumps(custom_data)
+            except Exception:
+                pass
+        db.session.commit()
+        # Return success response with redirect
         return jsonify({
             'success': True,
-            'message': 'Event updated successfully'
+            'message': 'Event updated successfully',
+            'redirect': f"/event/{event.id}"
         })
         
     except Exception as e:
@@ -1250,52 +1344,90 @@ def update_organiser_event(event_id):
 @organiser_bp.route('/api/organiser/pending-deallocations', methods=['GET'])
 @organiser_required
 def get_pending_deallocations():
+    """
+    Enhanced: Only consider event finished if both end_date and end_time have passed.
+    Handles missing/invalid end_time gracefully.
+    """
     try:
         user_id = session.get('user_id')
         from models.models import ResourceAllocation, Resource, Event
         now = datetime.utcnow()
         auto_deallocate_cutoff = now.timestamp() - 24*3600  # 24 hours ago
-        # Find events created by this organiser that have ended (end_date and end_time in the past)
+
+        # Find events created by this organiser
         events = Event.query.filter_by(created_by=user_id).all()
         event_ids = []
         event_end_times = {}
+
         for e in events:
+            # Only process events with end_date
             if e.end_date:
                 end_dt = e.end_date
+                # If end_time is present, combine with end_date
                 if e.end_time:
                     try:
                         h, m = map(int, e.end_time.split(':'))
-                        end_dt = end_dt.replace(hour=h, minute=m)
-                    except Exception:
-                        pass
+                        end_dt = end_dt.replace(hour=h, minute=m, second=0, microsecond=0)
+                    except Exception as time_error:
+                        # If time parsing fails, treat as end of day
+                        end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=0)
+                else:
+                    # No end_time: treat as end of day
+                    end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=0)
+                # Only consider events that have ended (date+time)
                 if end_dt < now:
                     event_ids.append(e.id)
                     event_end_times[e.id] = end_dt
+
         # Find allocations for these events that are still allocated
-        allocations = ResourceAllocation.query.filter(ResourceAllocation.event_id.in_(event_ids), ResourceAllocation.status == 'allocated').all()
+        allocations = ResourceAllocation.query.filter(ResourceAllocation.event_id.in_(event_ids), 
+                                                     ResourceAllocation.status == 'allocated').all()
         result = []
         auto_deallocated = []
+
         for alloc in allocations:
-            resource = Resource.query.get(alloc.resource_id)
-            event = Event.query.get(alloc.event_id)
-            end_dt = event_end_times.get(alloc.event_id)
-            # If allocation is overdue (>24h after event end), auto-deallocate
-            if end_dt and (now - end_dt).total_seconds() > 24*3600:
-                alloc.status = 'returned'
-                alloc.returned_at = now
-                if resource:
-                    resource.available_quantity += alloc.quantity
-                auto_deallocated.append(alloc.id)
-            else:
-                result.append({
-                    'allocation_id': alloc.id,
-                    'resource_name': resource.name if resource else 'Unknown',
-                    'event_name': event.name if event else 'Unknown',
-                    'quantity': alloc.quantity
-                })
+            try:
+                resource = Resource.query.get(alloc.resource_id)
+                event = Event.query.get(alloc.event_id)
+                end_dt = event_end_times.get(alloc.event_id)
+                # If allocation is overdue (>24h after event end), auto-deallocate
+                if end_dt and (now - end_dt).total_seconds() > 24*3600:
+                    alloc.status = 'returned'
+                    alloc.returned_at = now
+                    if resource:
+                        resource.available_quantity += alloc.quantity
+                    auto_deallocated.append({
+                        'id': alloc.id,
+                        'resource_name': resource.name if resource else 'Unknown',
+                        'event_name': event.name if event else 'Unknown'
+                    })
+                else:
+                    # Add to pending deallocation list
+                    result.append({
+                        'allocation_id': alloc.id,
+                        'resource_name': resource.name if resource else 'Unknown',
+                        'event_name': event.name if event else 'Unknown',
+                        'quantity': alloc.quantity,
+                        'end_time': end_dt.strftime("%Y-%m-%d %H:%M") if end_dt else 'Unknown'
+                    })
+            except Exception as alloc_error:
+                print(f"Error processing allocation {alloc.id}: {str(alloc_error)}")
+                continue
+
         if auto_deallocated:
             db.session.commit()
-        return jsonify({'success': True, 'allocations': result, 'auto_deallocated': auto_deallocated})
+
+        return jsonify({
+            'success': True, 
+            'allocations': result, 
+            'auto_deallocated': auto_deallocated
+        })
     except Exception as e:
         db.session.rollback()
+        print(f"Error in get_pending_deallocations: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@organiser_bp.route('/organiser/payments')
+def organiser_payments():
+    """Landing page for organiser payments: shows options for transactions, verification, etc."""
+    return render_template('organiser_payments.html')
