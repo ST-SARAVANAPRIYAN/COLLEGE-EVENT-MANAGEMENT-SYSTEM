@@ -9,8 +9,8 @@ from flask import current_app, session
 # Email configuration for Gmail
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
-EMAIL_USER = "saravanapriyan99940@gmail.com"
-EMAIL_PASSWORD = "yzyd rymg hlmd qzqf"  # App password for Gmail
+EMAIL_USER = "use your mail here"
+EMAIL_PASSWORD = ""  # App password for Gmail
 
 def send_email(to_email, subject, body):
     """Send email using SMTP"""
